@@ -1,5 +1,7 @@
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{Shell, generate};
 use moth::cmd;
+use std::io;
 use std::process;
 
 #[derive(Parser)]
@@ -7,7 +9,15 @@ use std::process;
 #[command(about = "A simple file-based issue tracker", long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
+
+    /// List all story IDs (for completion)
+    #[arg(long, hide = true)]
+    list_ids: bool,
+
+    /// List all status names (for completion)
+    #[arg(long, hide = true)]
+    list_statuses: bool,
 }
 
 #[derive(Subcommand)]
@@ -113,6 +123,12 @@ enum Commands {
         #[command(subcommand)]
         command: HookCommands,
     },
+
+    #[command(about = "Generate shell completions")]
+    Completions {
+        #[arg(help = "Shell type: bash, zsh, or fish")]
+        shell: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -133,7 +149,23 @@ enum HookCommands {
 fn main() {
     let cli = Cli::parse();
 
-    let result = match cli.command {
+    // Handle hidden completion helper flags
+    if cli.list_ids {
+        list_story_ids();
+        return;
+    }
+
+    if cli.list_statuses {
+        list_statuses();
+        return;
+    }
+
+    let Some(command) = cli.command else {
+        eprintln!("Error: No command specified. Use --help for usage information.");
+        process::exit(1);
+    };
+
+    let result = match command {
         Commands::Init => cmd::init::run(),
         Commands::New {
             title,
@@ -169,10 +201,114 @@ fn main() {
             HookCommands::Install { force, append } => cmd::hook::install(force, append),
             HookCommands::Uninstall => cmd::hook::uninstall(),
         },
+        Commands::Completions { shell } => {
+            generate_completions(&shell);
+            return;
+        }
     };
 
     if let Err(e) = result {
         eprintln!("Error: {}", e);
         process::exit(1);
     }
+}
+
+fn list_story_ids() {
+    use std::fs;
+
+    // Fast path: scan filesystem without full validation
+    let Ok(mut current) = std::env::current_dir() else {
+        return;
+    };
+
+    // Find .moth directory
+    let moth_dir = loop {
+        let moth = current.join(".moth");
+        if moth.is_dir() {
+            break moth;
+        }
+        if !current.pop() {
+            return; // No .moth found, silently exit
+        }
+    };
+
+    // Scan all status directories
+    let Ok(entries) = fs::read_dir(&moth_dir) else {
+        return;
+    };
+
+    let mut ids = Vec::new();
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        if !path.is_dir() || path.file_name().unwrap().to_str().unwrap().starts_with('.') {
+            continue;
+        }
+
+        // Scan files in this status directory
+        let Ok(files) = fs::read_dir(&path) else {
+            continue;
+        };
+
+        for file in files.filter_map(Result::ok) {
+            let filename = file.file_name();
+            let name = filename.to_string_lossy();
+            if !name.ends_with(".md") {
+                continue;
+            }
+
+            // Extract ID from filename: [NNN-]ID-priority-slug.md
+            let parts: Vec<&str> = name.trim_end_matches(".md").split('-').collect();
+            if parts.len() < 3 {
+                continue;
+            }
+
+            // Check if first part is a number (priority order)
+            let id_idx = if parts[0].parse::<u32>().is_ok() {
+                1
+            } else {
+                0
+            };
+            if parts.len() > id_idx {
+                ids.push(parts[id_idx].to_string());
+            }
+        }
+    }
+
+    // Print unique IDs
+    ids.sort();
+    ids.dedup();
+    for id in ids {
+        println!("{}", id);
+    }
+}
+
+fn list_statuses() {
+    use moth::config::Config;
+
+    // Try to load config, fail silently if not available
+    let Ok(config) = Config::load() else {
+        return;
+    };
+
+    for status in &config.statuses {
+        println!("{}", status.name);
+    }
+}
+
+fn generate_completions(shell_name: &str) {
+    let shell = match shell_name.to_lowercase().as_str() {
+        "bash" => Shell::Bash,
+        "zsh" => Shell::Zsh,
+        "fish" => Shell::Fish,
+        _ => {
+            eprintln!(
+                "Error: Unknown shell '{}'. Supported: bash, zsh, fish",
+                shell_name
+            );
+            process::exit(1);
+        }
+    };
+
+    let mut cmd = Cli::command();
+    generate(shell, &mut cmd, "moth", &mut io::stdout());
 }
