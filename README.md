@@ -1,5 +1,9 @@
 # Moth: A Simple File-Based Issue Tracker
 
+<p align="center">
+  <img src="docs/images/moth.png" alt="Moth Logo" width="300">
+</p>
+
 ![CI](https://github.com/YOUR_USERNAME/moth/workflows/CI/badge.svg)
 
 Moth is a git-style, file-based issue tracker that stores issues as markdown files. It's designed to be simple, transparent, and git-friendly, offering an alternative to commericial issue tracking systems. 
