@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moth - Simple File-Based Issue Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .hero .tagline {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .hero .cta {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .hero .cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section {
+            padding: 60px 20px;
+            background: white;
+        }
+
+        .section:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .section h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #667eea;
+        }
+
+        .section p {
+            font-size: 1.2em;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            color: #666;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature h3 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .feature p {
+            text-align: left;
+            font-size: 1em;
+            color: #666;
+        }
+
+        .code-example {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 30px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 40px auto;
+            max-width: 800px;
+        }
+
+        .code-example pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        .code-example .comment {
+            color: #5c6370;
+        }
+
+        .code-example .command {
+            color: #61afef;
+        }
+
+        .philosophy {
+            background: #f9f3ff;
+            padding: 40px;
+            border-radius: 10px;
+            margin: 40px auto;
+            max-width: 800px;
+            border-left: 4px solid #667eea;
+        }
+
+        .philosophy h3 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .philosophy p {
+            text-align: left;
+            font-size: 1.1em;
+        }
+
+        footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="container">
+            <h1>🦋 Moth</h1>
+            <p class="tagline">A git-style, file-based issue tracker that's simple, transparent, and version-control friendly</p>
+            <a href="https://github.com/tsmarsh/moth" class="cta">View on GitHub</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h2>Why Moth?</h2>
+            <p>Moth stores your issues as plain markdown files in your repository, making them as easy to manage as your code. No databases, no external services—just simple files that live alongside your project.</p>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>📁 File-Based Storage</h3>
+                    <p>Issues are markdown files stored in <code>.moth/{status}/</code>. Edit them directly or use the CLI.</p>
+                </div>
+                <div class="feature">
+                    <h3>🔄 Git-Friendly</h3>
+                    <p>Everything is plain text, perfect for version control. Track issue changes with git history.</p>
+                </div>
+                <div class="feature">
+                    <h3>⚡ Simple Workflow</h3>
+                    <p>Move issues through customizable statuses with intuitive commands. No complex UI to learn.</p>
+                </div>
+                <div class="feature">
+                    <h3>🎯 Priority Support</h3>
+                    <p>Track issue priority (crit, high, med, low) right in the filename.</p>
+                </div>
+                <div class="feature">
+                    <h3>🔍 Partial ID Matching</h3>
+                    <p>Reference issues with short IDs. No need to type the full identifier.</p>
+                </div>
+                <div class="feature">
+                    <h3>⚙️ Configurable</h3>
+                    <p>Customize statuses, priorities, editor, and ID length to match your workflow.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h2>Quick Start</h2>
+            <div class="code-example">
+                <pre><span class="comment"># Initialize moth in your project</span>
+<span class="command">moth init</span>
+
+<span class="comment"># Create a new issue</span>
+<span class="command">moth new</span> "Fix login bug" -p high
+
+<span class="comment"># List issues</span>
+<span class="command">moth ls</span>
+
+<span class="comment"># Move issue to "doing"</span>
+<span class="command">moth start</span> x7k2m
+
+<span class="comment"># Mark issue as done</span>
+<span class="command">moth done</span> x7k2m
+
+<span class="comment"># Show issue details</span>
+<span class="command">moth show</span> x7k2m</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h2>Philosophy on Story Points</h2>
+            <div class="philosophy">
+                <p>Moth focuses on tracking the number of completed issues rather than story points. This approach is based on research indicating that story point estimates often have significant variance and may not accurately predict delivery timelines. We recommend using issue count as a more reliable metric for measuring team capacity and velocity.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h2>How It Works</h2>
+            <p>Moth creates a simple directory structure in your project:</p>
+            <div class="code-example">
+                <pre>.moth/
+├── config.yml
+├── ready/
+│   ├── x7k2m-high-fix-login-bug.md
+│   └── p3j9n-med-add-dark-mode.md
+├── doing/
+│   └── a9f4k-crit-security-patch.md
+└── done/
+    └── b2h8l-low-update-docs.md</pre>
+            </div>
+            <p style="margin-top: 30px;">Each issue is a markdown file with a structured filename: <code>[id]-[priority]-[title-slug].md</code></p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h2>Installation</h2>
+            <div class="code-example">
+                <pre><span class="comment"># Build from source</span>
+<span class="command">cargo build --release</span>
+
+<span class="comment"># The binary will be available at</span>
+target/release/moth</pre>
+            </div>
+            <p style="margin-top: 30px;">
+                <span class="badge">Rust</span>
+                <span class="badge">CLI</span>
+                <span class="badge">Git-Friendly</span>
+                <span class="badge">Open Source</span>
+            </p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Built with ❤️ by developers who value simplicity</p>
+            <p style="margin-top: 10px;">
+                <a href="https://github.com/tsmarsh/moth">GitHub</a> •
+                <a href="https://github.com/tsmarsh/moth/issues">Report Issues</a> •
+                <a href="https://github.com/tsmarsh/moth/blob/main/README.md">Documentation</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
