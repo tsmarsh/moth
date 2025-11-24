@@ -107,6 +107,27 @@ enum Commands {
         #[arg(help = "Status to compact (optional, defaults to all prioritized)")]
         status: Option<String>,
     },
+
+    #[command(about = "Manage git commit hooks")]
+    Hook {
+        #[command(subcommand)]
+        command: HookCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum HookCommands {
+    #[command(about = "Install prepare-commit-msg hook")]
+    Install {
+        #[arg(long, help = "Overwrite existing hook")]
+        force: bool,
+
+        #[arg(long, help = "Append to existing hook")]
+        append: bool,
+    },
+
+    #[command(about = "Uninstall prepare-commit-msg hook")]
+    Uninstall,
 }
 
 fn main() {
@@ -144,6 +165,10 @@ fn main() {
             cmd::priority::run(&id, &position, other_id.as_deref(), compact_opt)
         }
         Commands::Compact { status } => cmd::priority::compact(status.as_deref()),
+        Commands::Hook { command } => match command {
+            HookCommands::Install { force, append } => cmd::hook::install(force, append),
+            HookCommands::Uninstall => cmd::hook::uninstall(),
+        },
     };
 
     if let Err(e) = result {
