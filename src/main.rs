@@ -74,6 +74,15 @@ enum Commands {
         #[arg(help = "Issue ID (full or partial)")]
         id: String,
     },
+
+    #[command(about = "Extract story change history from git commits as CSV")]
+    Report {
+        #[arg(long, help = "Start from this commit (optional)")]
+        since: Option<String>,
+
+        #[arg(long, help = "End at this commit (optional)")]
+        until: Option<String>,
+    },
 }
 
 fn main() {
@@ -93,6 +102,7 @@ fn main() {
         Commands::Mv { id, status } => cmd::mv::run(&id, &status),
         Commands::Edit { id } => cmd::edit::run(&id),
         Commands::Rm { id } => cmd::rm::run(&id),
+        Commands::Report { since, until } => cmd::report::run(since.as_deref(), until.as_deref()),
     };
 
     if let Err(e) = result {
