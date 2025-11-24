@@ -2,7 +2,11 @@
 
 ![CI](https://github.com/YOUR_USERNAME/moth/workflows/CI/badge.svg)
 
-Moth is a git-style, file-based issue tracker that stores issues as markdown files. It's designed to be simple, transparent, and git-friendly.
+Moth is a git-style, file-based issue tracker that stores issues as markdown files. It's designed to be simple, transparent, and git-friendly, offering an alternative to commericial issue tracking systems. 
+
+## Philosophy on Story Points
+
+Moth focuses on tracking the number of completed issues rather than story points. This approach is based on research indicating that story point estimates often have significant variance and may not accurately predict delivery timelines. We recommend using issue count as a more reliable metric for measuring team capacity and velocity. 
 
 ## Features
 
