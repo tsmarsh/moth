@@ -1,0 +1,10 @@
+statuses:
+- name: ready
+  dir: ready
+- name: doing
+  dir: doing
+- name: done
+  dir: done
+default_priority: med
+editor: vi
+id_length: 5
