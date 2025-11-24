@@ -4,6 +4,7 @@ pub mod init;
 pub mod list;
 pub mod mv;
 pub mod new;
+pub mod priority;
 pub mod report;
 pub mod rm;
 pub mod show;

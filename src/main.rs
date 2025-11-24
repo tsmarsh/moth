@@ -83,6 +83,30 @@ enum Commands {
         #[arg(long, help = "End at this commit (optional)")]
         until: Option<String>,
     },
+
+    #[command(about = "Set priority order for a story")]
+    Priority {
+        #[arg(help = "Issue ID (full or partial)")]
+        id: String,
+
+        #[arg(help = "Position: top, bottom, above, below, or number")]
+        position: String,
+
+        #[arg(help = "Other issue ID (required for above/below)")]
+        other_id: Option<String>,
+
+        #[arg(long, help = "Compact after repositioning")]
+        compact: bool,
+
+        #[arg(long, help = "Don't compact after repositioning")]
+        no_compact: bool,
+    },
+
+    #[command(about = "Compact priority numbering in status")]
+    Compact {
+        #[arg(help = "Status to compact (optional, defaults to all prioritized)")]
+        status: Option<String>,
+    },
 }
 
 fn main() {
@@ -103,6 +127,23 @@ fn main() {
         Commands::Edit { id } => cmd::edit::run(&id),
         Commands::Rm { id } => cmd::rm::run(&id),
         Commands::Report { since, until } => cmd::report::run(since.as_deref(), until.as_deref()),
+        Commands::Priority {
+            id,
+            position,
+            other_id,
+            compact,
+            no_compact,
+        } => {
+            let compact_opt = if compact {
+                Some(true)
+            } else if no_compact {
+                Some(false)
+            } else {
+                None
+            };
+            cmd::priority::run(&id, &position, other_id.as_deref(), compact_opt)
+        }
+        Commands::Compact { status } => cmd::priority::compact(status.as_deref()),
     };
 
     if let Err(e) = result {

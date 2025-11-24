@@ -59,7 +59,7 @@ fn test_new_creates_issue() {
     let issues = store.all_issues().unwrap();
 
     assert_eq!(issues.len(), 1);
-    assert_eq!(issues[0].slug, "fix-login-bug");
+    assert_eq!(issues[0].slug, "fix_login_bug");
     assert_eq!(issues[0].priority.as_str(), "high");
     assert_eq!(issues[0].status, "ready");
 }

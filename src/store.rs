@@ -83,9 +83,16 @@ impl Store {
         }
 
         issues.sort_by(|a, b| {
-            a.priority
-                .cmp(&b.priority)
-                .then_with(|| a.slug.cmp(&b.slug))
+            // First sort by order (if present), then by priority, then by slug
+            match (a.order, b.order) {
+                (Some(a_order), Some(b_order)) => a_order.cmp(&b_order),
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => a
+                    .priority
+                    .cmp(&b.priority)
+                    .then_with(|| a.slug.cmp(&b.slug)),
+            }
         });
 
         Ok(issues)
@@ -98,7 +105,14 @@ impl Store {
             .ok_or_else(|| anyhow!("Unknown status: {}", target_status))?;
 
         let target_dir = self.config.status_dir(target_config);
-        let new_path = target_dir.join(issue.filename());
+
+        // Strip priority order if target status is not prioritized
+        let mut updated_issue = issue.clone();
+        if !target_config.prioritized {
+            updated_issue.order = None;
+        }
+
+        let new_path = target_dir.join(updated_issue.filename());
 
         fs::rename(&issue.path, &new_path).with_context(|| {
             format!(
@@ -166,12 +180,12 @@ fn title_to_slug(title: &str) -> String {
         .trim()
         .to_lowercase()
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
         .collect::<String>()
-        .split('-')
+        .split('_')
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
-        .join("-")
+        .join("_")
 }
 
 #[cfg(test)]
@@ -180,12 +194,12 @@ mod tests {
 
     #[test]
     fn test_title_to_slug() {
-        assert_eq!(title_to_slug("Fix Login Bug"), "fix-login-bug");
-        assert_eq!(title_to_slug("Add Dark Mode"), "add-dark-mode");
+        assert_eq!(title_to_slug("Fix Login Bug"), "fix_login_bug");
+        assert_eq!(title_to_slug("Add Dark Mode"), "add_dark_mode");
         assert_eq!(
             title_to_slug("Fix   Multiple   Spaces"),
-            "fix-multiple-spaces"
+            "fix_multiple_spaces"
         );
-        assert_eq!(title_to_slug("API/REST endpoint"), "api-rest-endpoint");
+        assert_eq!(title_to_slug("API/REST endpoint"), "api_rest_endpoint");
     }
 }

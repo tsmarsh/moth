@@ -84,7 +84,7 @@ fn test_e2e_new_creates_issue() {
     let entry = &entries[0];
     let file_name = entry.file_name();
     let name = file_name.to_string_lossy();
-    assert!(name.contains("fix-login-bug"));
+    assert!(name.contains("fix_login_bug"));
 }
 
 #[test]

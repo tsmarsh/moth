@@ -53,6 +53,7 @@ pub struct Issue {
     pub slug: String,
     pub status: String,
     pub path: PathBuf,
+    pub order: Option<u32>,
 }
 
 impl Issue {
@@ -65,13 +66,29 @@ impl Issue {
         let parts: Vec<&str> = filename.split('-').collect();
         if parts.len() < 3 {
             return Err(anyhow!(
-                "Invalid filename format. Expected: {{id}}-{{priority}}-{{slug}}.md"
+                "Invalid filename format. Expected: [{{order}}-]{{id}}-{{priority}}-{{slug}}.md"
             ));
         }
 
-        let id = parts[0].to_string();
-        let priority = parts[1].parse()?;
-        let slug = parts[2..].join("-");
+        // Try to parse first part as order number
+        let (order, id_idx) = if parts[0].parse::<u32>().is_ok() {
+            (Some(parts[0].parse::<u32>().unwrap()), 1)
+        } else {
+            (None, 0)
+        };
+
+        if parts.len() < id_idx + 3 {
+            return Err(anyhow!(
+                "Invalid filename format. Expected: [{{order}}-]{{id}}-{{priority}}-{{slug}}.md"
+            ));
+        }
+
+        let id = parts[id_idx].to_string();
+        let priority = parts[id_idx + 1].parse()?;
+
+        // Join remaining parts with underscores (new format) or hyphens (backward compat)
+        let slug_parts = &parts[id_idx + 2..];
+        let slug = slug_parts.join("_");
 
         Ok(Issue {
             id,
@@ -79,16 +96,29 @@ impl Issue {
             slug,
             status: status.to_string(),
             path: path.to_path_buf(),
+            order,
         })
     }
 
     pub fn filename(&self) -> String {
-        format!("{}-{}-{}.md", self.id, self.priority.as_str(), self.slug)
+        if let Some(order) = self.order {
+            format!(
+                "{:03}-{}-{}-{}.md",
+                order,
+                self.id,
+                self.priority.as_str(),
+                self.slug
+            )
+        } else {
+            format!("{}-{}-{}.md", self.id, self.priority.as_str(), self.slug)
+        }
     }
 
     pub fn title(&self) -> String {
+        // Support both underscore (new) and hyphen (old) separators
+        let separator = if self.slug.contains('_') { '_' } else { '-' };
         self.slug
-            .split('-')
+            .split(separator)
             .map(|word| {
                 let mut chars = word.chars();
                 match chars.next() {
@@ -131,9 +161,10 @@ mod tests {
         let issue = Issue {
             id: "abc123".to_string(),
             priority: Priority::High,
-            slug: "fix-login-bug".to_string(),
+            slug: "fix_login_bug".to_string(),
             status: "ready".to_string(),
-            path: PathBuf::from("/test/abc123-high-fix-login-bug.md"),
+            path: PathBuf::from("/test/abc123-high-fix_login_bug.md"),
+            order: None,
         };
         assert_eq!(issue.title(), "Fix Login Bug");
     }
@@ -143,11 +174,25 @@ mod tests {
         let issue = Issue {
             id: "x7k2m".to_string(),
             priority: Priority::High,
-            slug: "fix-login-bug".to_string(),
+            slug: "fix_login_bug".to_string(),
             status: "ready".to_string(),
-            path: PathBuf::from("/test/x7k2m-high-fix-login-bug.md"),
+            path: PathBuf::from("/test/x7k2m-high-fix_login_bug.md"),
+            order: None,
         };
-        assert_eq!(issue.filename(), "x7k2m-high-fix-login-bug.md");
+        assert_eq!(issue.filename(), "x7k2m-high-fix_login_bug.md");
+    }
+
+    #[test]
+    fn test_issue_filename_with_order() {
+        let issue = Issue {
+            id: "x7k2m".to_string(),
+            priority: Priority::High,
+            slug: "fix_login_bug".to_string(),
+            status: "ready".to_string(),
+            path: PathBuf::from("/test/001-x7k2m-high-fix_login_bug.md"),
+            order: Some(1),
+        };
+        assert_eq!(issue.filename(), "001-x7k2m-high-fix_login_bug.md");
     }
 
     #[test]

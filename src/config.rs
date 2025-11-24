@@ -8,6 +8,14 @@ use std::path::PathBuf;
 pub struct StatusConfig {
     pub name: String,
     pub dir: String,
+    #[serde(default)]
+    pub prioritized: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PriorityConfig {
+    #[serde(default)]
+    pub auto_compact: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,6 +26,8 @@ pub struct Config {
     pub editor: String,
     #[serde(default = "default_id_length")]
     pub id_length: usize,
+    #[serde(default)]
+    pub priority: PriorityConfig,
     #[serde(skip)]
     pub moth_dir: PathBuf,
 }
@@ -37,19 +47,23 @@ impl Default for Config {
                 StatusConfig {
                     name: "ready".to_string(),
                     dir: "ready".to_string(),
+                    prioritized: true,
                 },
                 StatusConfig {
                     name: "doing".to_string(),
                     dir: "doing".to_string(),
+                    prioritized: false,
                 },
                 StatusConfig {
                     name: "done".to_string(),
                     dir: "done".to_string(),
+                    prioritized: false,
                 },
             ],
             default_priority: "med".to_string(),
             editor: default_editor(),
             id_length: 5,
+            priority: PriorityConfig::default(),
             moth_dir: PathBuf::new(),
         }
     }
