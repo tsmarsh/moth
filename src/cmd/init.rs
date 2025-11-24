@@ -1,5 +1,5 @@
 use crate::config::Config;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use std::env;
 use std::fs;
 
@@ -26,7 +26,10 @@ pub fn run() -> Result<()> {
     for status in &config.statuses {
         let status_dir = moth_dir.join(&status.dir);
         fs::create_dir(&status_dir).with_context(|| {
-            format!("Failed to create status directory: {}", status_dir.display())
+            format!(
+                "Failed to create status directory: {}",
+                status_dir.display()
+            )
         })?;
     }
 

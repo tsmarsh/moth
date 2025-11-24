@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::store::Store;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 pub fn run(id: &str, target_status: &str) -> Result<()> {
     let config = Config::load()?;

@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use rand::Rng;
 use std::fmt;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Priority {
@@ -11,17 +12,24 @@ pub enum Priority {
     Low,
 }
 
-impl Priority {
-    pub fn from_str(s: &str) -> Result<Self> {
+impl FromStr for Priority {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
         match s {
             "crit" => Ok(Priority::Crit),
             "high" => Ok(Priority::High),
             "med" => Ok(Priority::Med),
             "low" => Ok(Priority::Low),
-            _ => Err(anyhow!("Invalid priority: {}. Must be one of: crit, high, med, low", s)),
+            _ => Err(anyhow!(
+                "Invalid priority: {}. Must be one of: crit, high, med, low",
+                s
+            )),
         }
     }
+}
 
+impl Priority {
     pub fn as_str(&self) -> &'static str {
         match self {
             Priority::Crit => "crit",
@@ -62,7 +70,7 @@ impl Issue {
         }
 
         let id = parts[0].to_string();
-        let priority = Priority::from_str(parts[1])?;
+        let priority = parts[1].parse()?;
         let slug = parts[2..].join("-");
 
         Ok(Issue {
@@ -111,11 +119,11 @@ mod tests {
 
     #[test]
     fn test_priority_from_str() {
-        assert_eq!(Priority::from_str("crit").unwrap(), Priority::Crit);
-        assert_eq!(Priority::from_str("high").unwrap(), Priority::High);
-        assert_eq!(Priority::from_str("med").unwrap(), Priority::Med);
-        assert_eq!(Priority::from_str("low").unwrap(), Priority::Low);
-        assert!(Priority::from_str("invalid").is_err());
+        assert_eq!("crit".parse::<Priority>().unwrap(), Priority::Crit);
+        assert_eq!("high".parse::<Priority>().unwrap(), Priority::High);
+        assert_eq!("med".parse::<Priority>().unwrap(), Priority::Med);
+        assert_eq!("low".parse::<Priority>().unwrap(), Priority::Low);
+        assert!("invalid".parse::<Priority>().is_err());
     }
 
     #[test]
@@ -146,6 +154,9 @@ mod tests {
     fn test_generate_id() {
         let id = generate_id(5);
         assert_eq!(id.len(), 5);
-        assert!(id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()));
+        assert!(
+            id.chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        );
     }
 }

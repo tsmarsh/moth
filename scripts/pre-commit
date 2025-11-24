@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+
+echo "Running pre-commit checks..."
+
+# Format code
+echo "Running cargo fmt..."
+cargo fmt --all -- --check || {
+    echo "Code formatting issues found. Running cargo fmt --all to fix..."
+    cargo fmt --all
+    echo "Files formatted. Please review and commit again."
+    exit 1
+}
+
+# Run clippy
+echo "Running cargo clippy..."
+cargo clippy --all-targets -- -D warnings
+
+# Run tests
+echo "Running tests..."
+cargo test
+
+echo "All pre-commit checks passed!"

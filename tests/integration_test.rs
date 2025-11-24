@@ -37,10 +37,12 @@ fn test_init_fails_when_already_initialized() {
     cmd::init::run().unwrap();
     let result = cmd::init::run();
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("already initialized"));
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("already initialized")
+    );
 }
 
 #[test]

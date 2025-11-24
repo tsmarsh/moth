@@ -1,6 +1,6 @@
 use crate::config::Config;
-use crate::issue::{generate_id, Issue, Priority};
-use anyhow::{anyhow, Context, Result};
+use crate::issue::{Issue, Priority, generate_id};
+use anyhow::{Context, Result, anyhow};
 use std::fs;
 
 pub struct Store {
@@ -166,13 +166,7 @@ fn title_to_slug(title: &str) -> String {
         .trim()
         .to_lowercase()
         .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() {
-                c
-            } else {
-                '-'
-            }
-        })
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
         .collect::<String>()
         .split('-')
         .filter(|s| !s.is_empty())
@@ -188,7 +182,10 @@ mod tests {
     fn test_title_to_slug() {
         assert_eq!(title_to_slug("Fix Login Bug"), "fix-login-bug");
         assert_eq!(title_to_slug("Add Dark Mode"), "add-dark-mode");
-        assert_eq!(title_to_slug("Fix   Multiple   Spaces"), "fix-multiple-spaces");
+        assert_eq!(
+            title_to_slug("Fix   Multiple   Spaces"),
+            "fix-multiple-spaces"
+        );
         assert_eq!(title_to_slug("API/REST endpoint"), "api-rest-endpoint");
     }
 }

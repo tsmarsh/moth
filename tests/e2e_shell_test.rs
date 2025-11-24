@@ -14,8 +14,7 @@ fn get_binary_path() -> PathBuf {
 }
 
 fn setup_test_env() -> TempDir {
-    let temp_dir = TempDir::new().unwrap();
-    temp_dir
+    TempDir::new().unwrap()
 }
 
 fn run_moth_cmd(args: &[&str], cwd: &std::path::Path) -> (bool, String, String) {
@@ -403,8 +402,8 @@ fn test_e2e_commands_without_init_fail() {
     assert!(!success);
     assert!(
         stderr.contains("not initialized")
-        || stderr.contains("No such file")
-        || stderr.contains("Error"),
+            || stderr.contains("No such file")
+            || stderr.contains("Error"),
         "Expected error message, got: {}",
         stderr
     );
@@ -413,8 +412,8 @@ fn test_e2e_commands_without_init_fail() {
     assert!(!success);
     assert!(
         stderr.contains("not initialized")
-        || stderr.contains("No such file")
-        || stderr.contains("Error"),
+            || stderr.contains("No such file")
+            || stderr.contains("Error"),
         "Expected error message, got: {}",
         stderr
     );

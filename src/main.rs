@@ -81,9 +81,11 @@ fn main() {
 
     let result = match cli.command {
         Commands::Init => cmd::init::run(),
-        Commands::New { title, priority, no_edit } => {
-            cmd::new::run(&title, priority.as_deref(), no_edit)
-        }
+        Commands::New {
+            title,
+            priority,
+            no_edit,
+        } => cmd::new::run(&title, priority.as_deref(), no_edit),
         Commands::Ls { status, all } => cmd::list::run(status.as_deref(), all),
         Commands::Show { id } => cmd::show::run(&id),
         Commands::Start { id } => cmd::start::run(&id),

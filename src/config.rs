@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
@@ -30,8 +30,8 @@ fn default_id_length() -> usize {
     5
 }
 
-impl Config {
-    pub fn default() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Config {
             statuses: vec![
                 StatusConfig {
@@ -53,7 +53,9 @@ impl Config {
             moth_dir: PathBuf::new(),
         }
     }
+}
 
+impl Config {
     pub fn load() -> Result<Self> {
         let moth_dir = Self::find_moth_dir()?;
         let config_path = moth_dir.join("config.yml");

@@ -3,6 +3,7 @@ use crate::issue::Priority;
 use crate::store::Store;
 use anyhow::Result;
 use std::process::Command;
+use std::str::FromStr;
 
 pub fn run(title: &str, priority: Option<&str>, skip_editor: bool) -> Result<()> {
     let config = Config::load()?;
@@ -22,10 +23,7 @@ pub fn run(title: &str, priority: Option<&str>, skip_editor: bool) -> Result<()>
 
     if !skip_editor {
         let editor = &store.config().editor;
-        Command::new(editor)
-            .arg(&issue.path)
-            .status()
-            .ok();
+        Command::new(editor).arg(&issue.path).status().ok();
     }
 
     Ok(())
