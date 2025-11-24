@@ -14,7 +14,10 @@ Moth focuses on tracking the number of completed issues rather than story points
 - **Git-friendly**: Everything is plain text, perfect for version control
 - **Simple workflow**: Move issues through customizable statuses
 - **Priority support**: Track issue priority (crit, high, med, low)
+- **Priority ordering**: Order stories within prioritized columns (e.g., backlog)
+- **Git commit hook**: Automatically tag commits with active story ID
 - **Partial ID matching**: Use short IDs to reference issues
+- **Reporting**: Extract story change history from git commits as CSV
 - **Configurable**: Customize statuses, priorities, and editor
 
 ## Installation
@@ -37,10 +40,10 @@ moth new "Fix login bug" -p high
 # List issues
 moth ls
 
-# Move issue to "doing"
+# Move issue to "doing" (sets as current story)
 moth start x7k2m
 
-# Mark issue as done
+# Mark issue as done (clears current story)
 moth done x7k2m
 
 # Show issue details
@@ -51,9 +54,25 @@ moth edit x7k2m
 
 # Delete issue
 moth rm x7k2m
+
+# Install git commit hook
+moth hook install
+
+# Set priority order (for prioritized columns)
+moth priority x7k2m top
+moth priority x7k2m 5
+moth priority x7k2m above abc12
+
+# Compact priority numbering
+moth compact ready
+
+# Generate CSV report of story changes
+moth report --since HEAD~10
 ```
 
 ## Commands
+
+### Core Commands
 
 | Command | Description |
 |---------|-------------|
@@ -61,11 +80,30 @@ moth rm x7k2m
 | `moth new "<title>" [-p priority]` | Create issue in first status |
 | `moth ls [-s status] [-a]` | List issues (default: all except last status) |
 | `moth show <id>` | Display issue content |
-| `moth start <id>` | Move issue to `statuses[1]` |
-| `moth done <id>` | Move issue to `statuses[-1]` |
+| `moth start <id>` | Move issue to `statuses[1]` and set as current |
+| `moth done <id>` | Move issue to `statuses[-1]` and clear current |
 | `moth mv <id> <status>` | Move issue to any status |
 | `moth edit <id>` | Open issue in editor |
 | `moth rm <id>` | Delete an issue |
+
+### Priority Ordering
+
+| Command | Description |
+|---------|-------------|
+| `moth priority <id> top` | Move story to top of prioritized column |
+| `moth priority <id> bottom` | Remove priority ordering (moves to bottom) |
+| `moth priority <id> <number>` | Set specific priority number |
+| `moth priority <id> above <other-id>` | Place story above another |
+| `moth priority <id> below <other-id>` | Place story below another |
+| `moth compact [status]` | Renumber priorities sequentially (1,2,3...) |
+
+### Git Integration
+
+| Command | Description |
+|---------|-------------|
+| `moth hook install [--force] [--append]` | Install prepare-commit-msg hook |
+| `moth hook uninstall` | Remove moth git hook |
+| `moth report [--since] [--until]` | Generate CSV report of story changes |
 
 ## Configuration
 
@@ -76,6 +114,7 @@ The configuration file is located at `.moth/config.yml`:
 statuses:
   - name: ready
     dir: ready
+    prioritized: true  # Enable priority ordering for this column
   - name: doing
     dir: doing
   - name: done
@@ -89,6 +128,10 @@ editor: nvim
 
 # ID generation length (3-10)
 id_length: 5
+
+# Priority ordering settings
+priority:
+  auto_compact: false  # Auto-renumber on every priority change
 ```
 
 ### Config Behavior
@@ -104,21 +147,117 @@ id_length: 5
 ```
 .moth/
 ├── config.yml
-├── ready/
-│   ├── x7k2m-high-fix-login-bug.md
-│   └── p3j9n-med-add-dark-mode.md
+├── .current              # Tracks active story ID for git hooks
+├── ready/                # Prioritized column
+│   ├── 001-x7k2m-high-fix_login_bug.md
+│   ├── 002-p3j9n-med-add_dark_mode.md
+│   └── q8w3r-low-update_readme.md
 ├── doing/
-│   └── a9f4k-crit-security-patch.md
+│   └── a9f4k-crit-security_patch.md
 └── done/
-    └── b2h8l-low-update-docs.md
+    └── b2h8l-low-update_docs.md
 ```
 
 ## Filename Convention
 
+- **Format**: `[order-]id-priority-slug.md`
+- **Order** (optional): 3-digit priority number for ordering within prioritized columns
 - **ID**: Random lowercase alphanumeric (default 5 chars), e.g., `a3f8k`
 - **Priority**: One of `crit`, `high`, `med`, `low`
-- **Slug**: Kebab-case derived from title
-- **Example**: `x7k2m-high-fix-login-bug.md`
+- **Slug**: Snake_case derived from title
+- **Examples**:
+  - Unprioritized: `x7k2m-high-fix_login_bug.md`
+  - Prioritized: `001-x7k2m-high-fix_login_bug.md`
+
+## Priority Ordering
+
+Priority ordering allows you to control the order stories should be worked within specific columns (like a backlog). Enable it per-column in your config:
+
+```yaml
+statuses:
+  - name: ready
+    dir: ready
+    prioritized: true  # Enable ordering for this column
+```
+
+### How It Works
+
+- Stories in prioritized columns can have an order number (001, 002, etc.)
+- Stories with order numbers appear first, sorted numerically
+- Stories without order numbers appear last, sorted by priority/slug
+- Moving stories out of prioritized columns automatically strips the order number
+
+### Examples
+
+```bash
+# Move story to top priority
+moth priority abc12 top
+
+# Set specific position
+moth priority abc12 5
+
+# Position relative to another story
+moth priority abc12 above xyz89
+moth priority abc12 below xyz89
+
+# Remove priority (moves to bottom)
+moth priority abc12 bottom
+
+# Clean up gaps: 1,5,12 → 1,2,3
+moth compact ready
+```
+
+## Git Commit Hook Integration
+
+Moth can automatically tag your commits with the active story ID, making it easy to track which commits belong to which story.
+
+### Setup
+
+```bash
+# Install the git hook
+moth hook install
+
+# Start a story (sets it as current)
+moth start abc12
+
+# Make commits - they'll be automatically tagged
+git commit -m "Fix the bug"
+# Becomes: "[abc12] Fix the bug"
+
+# Complete the story (clears current)
+moth done abc12
+```
+
+### How It Works
+
+1. `moth start <id>` writes the story ID to `.moth/.current`
+2. The `prepare-commit-msg` hook reads `.current` and prepends `[id]` to commit messages
+3. `moth done <id>` removes `.current`
+4. Commits made without an active story are unmodified
+
+### Hook Behavior
+
+- Skips merge and squash commits
+- Won't double-tag messages that already have a `[tag]` prefix
+- Works from any subdirectory in your repo
+- Use `--append` flag to add to existing hooks
+
+## Reporting
+
+Extract story change history from git commits as CSV:
+
+```bash
+# Generate report for recent commits
+moth report --since HEAD~50
+
+# Report for specific time range
+moth report --since "2024-01-01" --until "2024-12-31"
+
+# Full history
+moth report
+```
+
+The report includes: timestamp, story ID, event type (created/moved/edited/deleted), and details.
 
 ## Testing
 
