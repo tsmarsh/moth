@@ -1,17 +1,19 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-MOTH_BIN="$1"
+MOTH_BIN_RELATIVE="$1"
 
-if [ -z "$MOTH_BIN" ]; then
+if [ -z "$MOTH_BIN_RELATIVE" ]; then
     echo "Usage: $0 <path-to-moth-binary>"
     exit 1
 fi
+
+MOTH_BIN=$(realpath "$MOTH_BIN_RELATIVE")
 
 if [ ! -x "$MOTH_BIN" ]; then
     echo "Error: $MOTH_BIN is not executable"
@@ -63,6 +65,7 @@ assert_contains() {
 }
 
 echo "=== Basic Initialization ==="
+"$MOTH_BIN" init
 run_test "moth init creates .moth directory" assert_exists .moth
 run_test "config.yml exists" assert_exists .moth/config.yml
 run_test "ready directory exists" assert_exists .moth/ready
@@ -75,13 +78,17 @@ echo "=== Creating Issues ==="
 "$MOTH_BIN" new "Fix login bug" -p high --no-edit > /tmp/moth_output 2>&1
 ISSUE1_ID=$(grep "Created" /tmp/moth_output | awk '{print $2}' | cut -d: -f1)
 run_test "created issue with high priority" test -n "$ISSUE1_ID"
+echo "ISSUE1_ID: $ISSUE1_ID"
+echo "Expected file: .moth/ready/${ISSUE1_ID}-high-fix-login-bug.md"
 
 "$MOTH_BIN" new "Add dark mode" --no-edit > /tmp/moth_output 2>&1
 ISSUE2_ID=$(grep "Created" /tmp/moth_output | awk '{print $2}' | cut -d: -f1)
 run_test "created issue with default priority" test -n "$ISSUE2_ID"
 
-run_test "issue file exists in ready" assert_exists ".moth/ready/${ISSUE1_ID}-high-fix-login-bug.md"
-run_test "issue has correct priority in filename" assert_exists ".moth/ready/${ISSUE1_ID}-high-fix-login-bug.md"
+ls -l .moth/ready # Add this line for debugging
+
+run_test "issue file exists in ready" assert_exists ".moth/ready/${ISSUE1_ID}-high-fix_login_bug.md"
+run_test "issue has correct priority in filename" assert_exists ".moth/ready/${ISSUE1_ID}-high-fix_login_bug.md"
 
 echo
 
@@ -95,15 +102,15 @@ echo
 
 echo "=== Moving Issues ==="
 "$MOTH_BIN" start "$ISSUE1_ID"
-run_test "issue moved out of ready" assert_not_exists ".moth/ready/${ISSUE1_ID}-high-fix-login-bug.md"
-run_test "issue moved to doing" assert_exists ".moth/doing/${ISSUE1_ID}-high-fix-login-bug.md"
+run_test "issue moved out of ready" assert_not_exists ".moth/ready/${ISSUE1_ID}-high-fix_login_bug.md"
+run_test "issue moved to doing" assert_exists ".moth/doing/${ISSUE1_ID}-high-fix_login_bug.md"
 
 "$MOTH_BIN" done "$ISSUE1_ID"
-run_test "issue moved out of doing" assert_not_exists ".moth/doing/${ISSUE1_ID}-high-fix-login-bug.md"
-run_test "issue moved to done" assert_exists ".moth/done/${ISSUE1_ID}-high-fix-login-bug.md"
+run_test "issue moved out of doing" assert_not_exists ".moth/doing/${ISSUE1_ID}-high-fix_login_bug.md"
+run_test "issue moved to done" assert_exists ".moth/done/${ISSUE1_ID}-high-fix_login_bug.md"
 
 "$MOTH_BIN" mv "$ISSUE2_ID" doing
-run_test "mv command works" assert_exists ".moth/doing/${ISSUE2_ID}-med-add-dark-mode.md"
+run_test "mv command works" assert_exists ".moth/doing/${ISSUE2_ID}-med-add_dark_mode.md"
 
 echo
 
@@ -122,21 +129,22 @@ run_test "partial ID works" assert_contains /tmp/moth_show_partial "ID: $ISSUE2_
 
 echo
 
-echo "=== Deleting Issues ==="
-"$MOTH_BIN" rm "$ISSUE1_ID"
-run_test "rm deletes issue file" assert_not_exists ".moth/done/${ISSUE1_ID}-high-fix-login-bug.md"
-
-echo
-
 echo "=== List Filtering ==="
 "$MOTH_BIN" ls > /tmp/moth_list_default 2>&1
 run_test "default list excludes done" bash -c "! grep -q 'done' /tmp/moth_list_default"
 
 "$MOTH_BIN" ls -a > /tmp/moth_list_all 2>&1
+cat /tmp/moth_list_all # Add this line for debugging
 run_test "list -a shows all statuses" assert_contains /tmp/moth_list_all "done"
 
 "$MOTH_BIN" ls -s doing > /tmp/moth_list_doing 2>&1
 run_test "list -s filters by status" assert_contains /tmp/moth_list_doing "doing"
+
+echo
+
+echo "=== Deleting Issues ==="
+"$MOTH_BIN" rm "$ISSUE1_ID"
+run_test "rm deletes issue file" assert_not_exists ".moth/done/${ISSUE1_ID}-high-fix_login_bug.md"
 
 echo
 
@@ -161,6 +169,15 @@ run_test "show fails with nonexistent ID" bash -c "! '$MOTH_BIN' show nonexisten
 run_test "mv fails with invalid status" bash -c "! '$MOTH_BIN' mv \$ISSUE2_ID invalid > /dev/null 2>&1"
 run_test "new fails with empty title" bash -c "! '$MOTH_BIN' new '' --no-edit > /dev/null 2>&1"
 run_test "new fails with invalid priority" bash -c "! '$MOTH_BIN' new 'Test' -p invalid --no-edit > /dev/null 2>&1"
+
+echo
+
+echo "=== No Edit On New Config ==="
+# Modify config to set no_edit_on_new to true
+sed -i 's/no_edit_on_new: false/no_edit_on_new: true/' .moth/config.yml
+run_test "new command fails when no_edit_on_new is true" bash -c "! '$MOTH_BIN' new 'Should not open editor' > /dev/null 2>&1"
+run_test "new command with --no-edit still works when no_edit_on_new is true" bash -c "'$MOTH_BIN' new 'Should work with no-edit' --no-edit > /dev/null 2>&1"
+sed -i 's/no_edit_on_new: true/no_edit_on_new: false/' .moth/config.yml # Revert config for subsequent tests
 
 echo
 

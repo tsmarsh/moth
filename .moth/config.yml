@@ -9,5 +9,6 @@ statuses:
 default_priority: med
 editor: vi
 id_length: 5
+no_edit: false
 priority:
   auto_compact: false

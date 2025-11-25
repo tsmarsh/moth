@@ -448,3 +448,27 @@ fn test_done_no_args_no_current() {
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("No current issue"));
 }
+
+#[test]
+#[serial]
+fn test_new_respects_no_edit_on_new_config() {
+    let _temp = setup_test_env();
+    cmd::init::run().unwrap();
+
+    // Modify config to set no_edit_on_new to true
+    let moth_dir = PathBuf::from(".moth");
+    let config_path = moth_dir.join("config.yml");
+    let original_config = fs::read_to_string(&config_path).unwrap();
+    let modified_config = original_config.replace("no_edit_on_new: false", "no_edit_on_new: true");
+    fs::write(&config_path, modified_config).unwrap();
+
+    // Try to create a new issue without skipping editor
+    let result = cmd::new::run("Test issue with no_edit_on_new", None, false);
+    assert!(result.is_err());
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("Editing is disabled by configuration (no_edit_on_new: true).")
+    );
+}
