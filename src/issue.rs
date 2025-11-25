@@ -5,42 +5,42 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Priority {
+pub enum Severity {
     Crit,
     High,
     Med,
     Low,
 }
 
-impl FromStr for Priority {
+impl FromStr for Severity {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
-            "crit" => Ok(Priority::Crit),
-            "high" => Ok(Priority::High),
-            "med" => Ok(Priority::Med),
-            "low" => Ok(Priority::Low),
+            "crit" => Ok(Severity::Crit),
+            "high" => Ok(Severity::High),
+            "med" => Ok(Severity::Med),
+            "low" => Ok(Severity::Low),
             _ => Err(anyhow!(
-                "Invalid priority: {}. Must be one of: crit, high, med, low",
+                "Invalid severity: {}. Must be one of: crit, high, med, low",
                 s
             )),
         }
     }
 }
 
-impl Priority {
+impl Severity {
     pub fn as_str(&self) -> &'static str {
         match self {
-            Priority::Crit => "crit",
-            Priority::High => "high",
-            Priority::Med => "med",
-            Priority::Low => "low",
+            Severity::Crit => "crit",
+            Severity::High => "high",
+            Severity::Med => "med",
+            Severity::Low => "low",
         }
     }
 }
 
-impl fmt::Display for Priority {
+impl fmt::Display for Severity {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }
@@ -49,7 +49,7 @@ impl fmt::Display for Priority {
 #[derive(Debug, Clone)]
 pub struct Issue {
     pub id: String,
-    pub priority: Priority,
+    pub severity: Severity,
     pub slug: String,
     pub status: String,
     pub path: PathBuf,
@@ -66,7 +66,7 @@ impl Issue {
         let parts: Vec<&str> = filename.split('-').collect();
         if parts.len() < 3 {
             return Err(anyhow!(
-                "Invalid filename format. Expected: [{{order}}-]{{id}}-{{priority}}-{{slug}}.md"
+                "Invalid filename format. Expected: [{{order}}-]{{id}}-{{severity}}-{{slug}}.md"
             ));
         }
 
@@ -79,12 +79,12 @@ impl Issue {
 
         if parts.len() < id_idx + 3 {
             return Err(anyhow!(
-                "Invalid filename format. Expected: [{{order}}-]{{id}}-{{priority}}-{{slug}}.md"
+                "Invalid filename format. Expected: [{{order}}-]{{id}}-{{severity}}-{{slug}}.md"
             ));
         }
 
         let id = parts[id_idx].to_string();
-        let priority = parts[id_idx + 1].parse()?;
+        let severity = parts[id_idx + 1].parse()?;
 
         // Join remaining parts with underscores (new format) or hyphens (backward compat)
         let slug_parts = &parts[id_idx + 2..];
@@ -92,7 +92,7 @@ impl Issue {
 
         Ok(Issue {
             id,
-            priority,
+            severity,
             slug,
             status: status.to_string(),
             path: path.to_path_buf(),
@@ -106,11 +106,11 @@ impl Issue {
                 "{:03}-{}-{}-{}.md",
                 order,
                 self.id,
-                self.priority.as_str(),
+                self.severity.as_str(),
                 self.slug
             )
         } else {
-            format!("{}-{}-{}.md", self.id, self.priority.as_str(), self.slug)
+            format!("{}-{}-{}.md", self.id, self.severity.as_str(), self.slug)
         }
     }
 
@@ -132,15 +132,21 @@ impl Issue {
 }
 
 pub fn generate_id(length: usize) -> String {
+    const LETTERS: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
     const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
     let mut rng = rand::thread_rng();
 
-    (0..length)
+    // First character must be a letter to avoid confusion with order numbers
+    let first = LETTERS[rng.gen_range(0..LETTERS.len())] as char;
+
+    let rest: String = (1..length)
         .map(|_| {
             let idx = rng.gen_range(0..CHARSET.len());
             CHARSET[idx] as char
         })
-        .collect()
+        .collect();
+
+    format!("{}{}", first, rest)
 }
 
 #[cfg(test)]
@@ -148,19 +154,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_priority_from_str() {
-        assert_eq!("crit".parse::<Priority>().unwrap(), Priority::Crit);
-        assert_eq!("high".parse::<Priority>().unwrap(), Priority::High);
-        assert_eq!("med".parse::<Priority>().unwrap(), Priority::Med);
-        assert_eq!("low".parse::<Priority>().unwrap(), Priority::Low);
-        assert!("invalid".parse::<Priority>().is_err());
+    fn test_severity_from_str() {
+        assert_eq!("crit".parse::<Severity>().unwrap(), Severity::Crit);
+        assert_eq!("high".parse::<Severity>().unwrap(), Severity::High);
+        assert_eq!("med".parse::<Severity>().unwrap(), Severity::Med);
+        assert_eq!("low".parse::<Severity>().unwrap(), Severity::Low);
+        assert!("invalid".parse::<Severity>().is_err());
     }
 
     #[test]
     fn test_issue_title() {
         let issue = Issue {
             id: "abc123".to_string(),
-            priority: Priority::High,
+            severity: Severity::High,
             slug: "fix_login_bug".to_string(),
             status: "ready".to_string(),
             path: PathBuf::from("/test/abc123-high-fix_login_bug.md"),
@@ -173,7 +179,7 @@ mod tests {
     fn test_issue_filename() {
         let issue = Issue {
             id: "x7k2m".to_string(),
-            priority: Priority::High,
+            severity: Severity::High,
             slug: "fix_login_bug".to_string(),
             status: "ready".to_string(),
             path: PathBuf::from("/test/x7k2m-high-fix_login_bug.md"),
@@ -186,7 +192,7 @@ mod tests {
     fn test_issue_filename_with_order() {
         let issue = Issue {
             id: "x7k2m".to_string(),
-            priority: Priority::High,
+            severity: Severity::High,
             slug: "fix_login_bug".to_string(),
             status: "ready".to_string(),
             path: PathBuf::from("/test/001-x7k2m-high-fix_login_bug.md"),

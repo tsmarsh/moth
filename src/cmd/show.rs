@@ -16,8 +16,8 @@ pub fn run(id: Option<&str>) -> Result<()> {
     };
 
     println!(
-        "ID: {} | Priority: {} | Status: {}",
-        issue.id, issue.priority, issue.status
+        "ID: {} | Severity: {} | Status: {}",
+        issue.id, issue.severity, issue.status
     );
     println!("Title: {}", issue.title());
     println!("---");

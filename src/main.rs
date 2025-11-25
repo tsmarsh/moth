@@ -30,8 +30,8 @@ enum Commands {
         #[arg(help = "Issue title")]
         title: String,
 
-        #[arg(short, long, help = "Priority (crit, high, med, low)")]
-        priority: Option<String>,
+        #[arg(short, long, help = "Severity (crit, high, med, low)")]
+        severity: Option<String>,
 
         #[arg(long, help = "Skip opening editor")]
         no_edit: bool,
@@ -42,11 +42,14 @@ enum Commands {
 
     #[command(about = "List issues")]
     Ls {
-        #[arg(short, long, help = "Filter by status")]
+        #[arg(short = 't', long, help = "Filter by status")]
         status: Option<String>,
 
         #[arg(short, long, help = "Show all including done")]
         all: bool,
+
+        #[arg(short = 's', long, help = "Filter by severity (crit, high, med, low)")]
+        severity: Option<String>,
     },
 
     #[command(about = "Show issue details")]
@@ -121,6 +124,15 @@ enum Commands {
         status: Option<String>,
     },
 
+    #[command(about = "Change issue severity")]
+    Severity {
+        #[arg(help = "Issue ID (full or partial)")]
+        id: String,
+
+        #[arg(help = "Severity level (crit, high, med, low)")]
+        level: String,
+    },
+
     #[command(about = "Manage git commit hooks")]
     Hook {
         #[command(subcommand)]
@@ -172,11 +184,25 @@ fn main() {
         Commands::Init => cmd::init::run(),
         Commands::New {
             title,
-            priority,
+            severity,
             no_edit,
             start,
-        } => cmd::new::run(&title, priority.as_deref(), no_edit, start),
-        Commands::Ls { status, all } => cmd::list::run(status.as_deref(), all),
+        } => cmd::new::run(&title, severity.as_deref(), no_edit, start),
+        Commands::Ls {
+            status,
+            all,
+            severity,
+        } => {
+            let sev_filter = severity
+                .as_deref()
+                .map(|s| s.parse())
+                .transpose()
+                .unwrap_or_else(|e| {
+                    eprintln!("Error: {}", e);
+                    process::exit(1);
+                });
+            cmd::list::run(status.as_deref(), all, sev_filter)
+        }
         Commands::Show { id } => cmd::show::run(id.as_deref()),
         Commands::Start { id } => cmd::start::run(&id),
         Commands::Done { id } => cmd::done::run(id.as_deref()),
@@ -201,6 +227,13 @@ fn main() {
             cmd::priority::run(&id, &position, other_id.as_deref(), compact_opt)
         }
         Commands::Compact { status } => cmd::priority::compact(status.as_deref()),
+        Commands::Severity { id, level } => {
+            let sev = level.parse().unwrap_or_else(|e| {
+                eprintln!("Error: {}", e);
+                process::exit(1);
+            });
+            cmd::severity::run(&id, sev)
+        }
         Commands::Hook { command } => match command {
             HookCommands::Install { force, append } => cmd::hook::install(force, append),
             HookCommands::Uninstall => cmd::hook::uninstall(),

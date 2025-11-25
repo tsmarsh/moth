@@ -28,12 +28,12 @@ pub fn run(id: &str, position: &str, other_id: Option<&str>, compact: Option<boo
     // Calculate new order based on position
     let new_order = match position {
         "top" => {
-            // Find lowest existing priority, or 1
+            // Find lowest existing order, or 1
             let min_order = issues.iter().filter_map(|i| i.order).min().unwrap_or(1);
             Some(if min_order > 1 { min_order - 1 } else { 1 })
         }
         "bottom" => {
-            // Remove priority (None means bottom)
+            // Remove order (None means bottom/unprioritized)
             None
         }
         "above" => {

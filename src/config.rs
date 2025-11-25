@@ -21,13 +21,14 @@ pub struct PriorityConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub statuses: Vec<StatusConfig>,
-    pub default_priority: String,
+    #[serde(alias = "default_priority")]
+    pub default_severity: String,
     #[serde(default = "default_editor")]
     pub editor: String,
     #[serde(default = "default_id_length")]
     pub id_length: usize,
-    #[serde(default)]
-    pub no_edit_on_new: bool,
+    #[serde(default, alias = "no_edit_on_new")]
+    pub no_edit: bool,
     #[serde(default)]
     pub priority: PriorityConfig,
     #[serde(skip)]
@@ -62,10 +63,10 @@ impl Default for Config {
                     prioritized: false,
                 },
             ],
-            default_priority: "med".to_string(),
+            default_severity: "med".to_string(),
             editor: default_editor(),
             id_length: 5,
-            no_edit_on_new: false,
+            no_edit: false,
             priority: PriorityConfig::default(),
             moth_dir: PathBuf::new(),
         }
@@ -121,11 +122,11 @@ impl Config {
             ));
         }
 
-        let valid_priorities = ["crit", "high", "med", "low"];
-        if !valid_priorities.contains(&self.default_priority.as_str()) {
+        let valid_severities = ["crit", "high", "med", "low"];
+        if !valid_severities.contains(&self.default_severity.as_str()) {
             return Err(anyhow!(
-                "Invalid default_priority: {}. Must be one of: crit, high, med, low",
-                self.default_priority
+                "Invalid default_severity: {}. Must be one of: crit, high, med, low",
+                self.default_severity
             ));
         }
 
@@ -168,7 +169,7 @@ mod tests {
     fn test_default_config() {
         let config = Config::default();
         assert_eq!(config.statuses.len(), 3);
-        assert_eq!(config.default_priority, "med");
+        assert_eq!(config.default_severity, "med");
         assert_eq!(config.id_length, 5);
     }
 
@@ -181,7 +182,7 @@ mod tests {
         assert!(config.validate().is_err());
 
         config = Config::default();
-        config.default_priority = "invalid".to_string();
+        config.default_severity = "invalid".to_string();
         assert!(config.validate().is_err());
 
         config = Config::default();

@@ -68,7 +68,7 @@ fn test_e2e_new_creates_issue() {
 
     run_moth_cmd(&["init"], temp_path);
     let (success, _stdout, stderr) = run_moth_cmd(
-        &["new", "Fix login bug", "--no-edit", "-p", "high"],
+        &["new", "Fix login bug", "--no-edit", "-s", "high"],
         temp_path,
     );
 
@@ -89,18 +89,18 @@ fn test_e2e_new_creates_issue() {
 
 #[test]
 #[serial]
-fn test_e2e_new_with_invalid_priority() {
+fn test_e2e_new_with_invalid_severity() {
     let temp = setup_test_env();
     let temp_path = temp.path();
 
     run_moth_cmd(&["init"], temp_path);
     let (success, _, stderr) = run_moth_cmd(
-        &["new", "Test issue", "--no-edit", "-p", "invalid"],
+        &["new", "Test issue", "--no-edit", "-s", "invalid"],
         temp_path,
     );
 
     assert!(!success);
-    assert!(stderr.contains("Invalid priority"));
+    assert!(stderr.contains("Invalid severity"));
 }
 
 #[test]
@@ -111,13 +111,13 @@ fn test_e2e_ls_shows_issues() {
 
     run_moth_cmd(&["init"], temp_path);
     run_moth_cmd(&["new", "Issue 1", "--no-edit"], temp_path);
-    run_moth_cmd(&["new", "Issue 2", "--no-edit", "-p", "high"], temp_path);
+    run_moth_cmd(&["new", "Issue 2", "--no-edit", "-s", "high"], temp_path);
 
     let (success, stdout, stderr) = run_moth_cmd(&["ls"], temp_path);
 
     assert!(success, "Command failed: {}", stderr);
-    assert!(stdout.contains("Issue 1") || stdout.contains("issue-1"));
-    assert!(stdout.contains("Issue 2") || stdout.contains("issue-2"));
+    assert!(stdout.contains("Issue 1") || stdout.contains("issue_1"));
+    assert!(stdout.contains("Issue 2") || stdout.contains("issue_2"));
 }
 
 #[test]
@@ -129,11 +129,11 @@ fn test_e2e_ls_filters_by_status() {
     run_moth_cmd(&["init"], temp_path);
     run_moth_cmd(&["new", "Ready issue", "--no-edit"], temp_path);
 
-    let (success, stdout, _) = run_moth_cmd(&["ls", "-s", "ready"], temp_path);
+    let (success, stdout, _) = run_moth_cmd(&["ls", "-t", "ready"], temp_path);
     assert!(success);
     assert!(stdout.contains("Ready") || stdout.contains("ready"));
 
-    let (success, stdout, _) = run_moth_cmd(&["ls", "-s", "doing"], temp_path);
+    let (success, stdout, _) = run_moth_cmd(&["ls", "-t", "doing"], temp_path);
     assert!(success);
     assert!(!stdout.contains("Ready") && !stdout.contains("ready"));
 }
@@ -348,7 +348,7 @@ fn test_e2e_full_workflow() {
     let (success, _, _) = run_moth_cmd(&["init"], temp_path);
     assert!(success);
 
-    let (success, _, _) = run_moth_cmd(&["new", "Fix bug", "--no-edit", "-p", "high"], temp_path);
+    let (success, _, _) = run_moth_cmd(&["new", "Fix bug", "--no-edit", "-s", "high"], temp_path);
     assert!(success);
 
     let (success, _, _) = run_moth_cmd(&["new", "Add feature", "--no-edit"], temp_path);
@@ -446,21 +446,20 @@ fn test_e2e_partial_id_matching() {
 
 #[test]
 #[serial]
-fn test_e2e_new_respects_no_edit_on_new_config() {
+fn test_e2e_new_respects_no_edit_config() {
     let temp = setup_test_env();
     let temp_path = temp.path();
 
     run_moth_cmd(&["init"], temp_path);
 
-    // Modify config to set no_edit_on_new to true
+    // Modify config to set no_edit to true
     let config_path = temp_path.join(".moth/config.yml");
     let original_config = std::fs::read_to_string(&config_path).unwrap();
-    let modified_config = original_config.replace("no_edit_on_new: false", "no_edit_on_new: true");
+    let modified_config = original_config.replace("no_edit: false", "no_edit: true");
     std::fs::write(&config_path, modified_config).unwrap();
 
     // Try to create a new issue without --no-edit
-    let (success, _stdout, stderr) =
-        run_moth_cmd(&["new", "Test issue with no_edit_on_new"], temp_path);
+    let (success, _stdout, stderr) = run_moth_cmd(&["new", "Test issue with no_edit"], temp_path);
     assert!(success, "Command failed: {}", stderr);
 
     // Verify that the issue was created
@@ -473,7 +472,7 @@ fn test_e2e_new_respects_no_edit_on_new_config() {
     let entry = &entries[0];
     let file_name = entry.file_name();
     let name = file_name.to_string_lossy();
-    assert!(name.contains("test_issue_with_no_edit_on_new"));
+    assert!(name.contains("test_issue_with_no_edit"));
 }
 
 #[test]
