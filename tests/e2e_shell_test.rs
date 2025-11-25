@@ -464,3 +464,30 @@ fn test_e2e_new_respects_no_edit_on_new_config() {
     assert!(!success);
     assert!(stderr.contains("Editing is disabled by configuration (no_edit_on_new: true)."));
 }
+
+#[test]
+#[serial]
+fn test_e2e_new_with_start_flag_moves_to_doing() {
+    let temp = setup_test_env();
+    let temp_path = temp.path();
+
+    run_moth_cmd(&["init"], temp_path);
+    let (success, _stdout, stderr) = run_moth_cmd(
+        &["new", "Test issue with start", "--no-edit", "--start"],
+        temp_path,
+    );
+
+    assert!(success, "Command failed: {}", stderr);
+
+    let doing_dir = temp_path.join(".moth/doing");
+    let entries: Vec<_> = std::fs::read_dir(&doing_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .collect();
+
+    assert_eq!(entries.len(), 1);
+    let entry = &entries[0];
+    let file_name = entry.file_name();
+    let name = file_name.to_string_lossy();
+    assert!(name.contains("test_issue_with_start"));
+}
