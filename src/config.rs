@@ -27,8 +27,8 @@ pub struct Config {
     pub editor: String,
     #[serde(default = "default_id_length")]
     pub id_length: usize,
-    #[serde(default)]
-    pub no_edit_on_new: bool,
+    #[serde(default, alias = "no_edit_on_new")]
+    pub no_edit: bool,
     #[serde(default)]
     pub priority: PriorityConfig,
     #[serde(skip)]
@@ -66,7 +66,7 @@ impl Default for Config {
             default_severity: "med".to_string(),
             editor: default_editor(),
             id_length: 5,
-            no_edit_on_new: false,
+            no_edit: false,
             priority: PriorityConfig::default(),
             moth_dir: PathBuf::new(),
         }

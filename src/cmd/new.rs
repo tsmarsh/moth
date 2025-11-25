@@ -26,15 +26,15 @@ pub fn run(title: &str, severity: Option<&str>, skip_editor: bool, start: bool) 
         start::run(&issue.id)?;
     }
 
-    // If user did not explicitly skip editor AND no_edit_on_new is true, return an error.
-    if !skip_editor && store.config().no_edit_on_new {
+    // If user did not explicitly skip editor AND no_edit is true, return an error.
+    if !skip_editor && store.config().no_edit {
         return Err(anyhow!(
-            "Editing is disabled by configuration (no_edit_on_new: true)."
+            "Editing is disabled by configuration (no_edit: true)."
         ));
     }
 
-    // If user did not explicitly skip editor AND no_edit_on_new is false, open editor.
-    if !skip_editor && !store.config().no_edit_on_new {
+    // If user did not explicitly skip editor AND no_edit is false, open editor.
+    if !skip_editor && !store.config().no_edit {
         let editor = &store.config().editor;
         Command::new(editor)
             .arg(&issue.path)

@@ -446,23 +446,22 @@ fn test_e2e_partial_id_matching() {
 
 #[test]
 #[serial]
-fn test_e2e_new_respects_no_edit_on_new_config() {
+fn test_e2e_new_respects_no_edit_config() {
     let temp = setup_test_env();
     let temp_path = temp.path();
 
     run_moth_cmd(&["init"], temp_path);
 
-    // Modify config to set no_edit_on_new to true
+    // Modify config to set no_edit to true
     let config_path = temp_path.join(".moth/config.yml");
     let original_config = std::fs::read_to_string(&config_path).unwrap();
-    let modified_config = original_config.replace("no_edit_on_new: false", "no_edit_on_new: true");
+    let modified_config = original_config.replace("no_edit: false", "no_edit: true");
     std::fs::write(&config_path, modified_config).unwrap();
 
     // Try to create a new issue without --no-edit
-    let (success, _stdout, stderr) =
-        run_moth_cmd(&["new", "Test issue with no_edit_on_new"], temp_path);
+    let (success, _stdout, stderr) = run_moth_cmd(&["new", "Test issue with no_edit"], temp_path);
     assert!(!success);
-    assert!(stderr.contains("Editing is disabled by configuration (no_edit_on_new: true)."));
+    assert!(stderr.contains("Editing is disabled by configuration (no_edit: true)."));
 }
 
 #[test]
