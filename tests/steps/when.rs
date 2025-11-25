@@ -147,3 +147,59 @@ fn user_deletes_last_issue(world: &mut MothWorld) {
 fn user_shows_partial_id(world: &mut MothWorld, partial_id: String) {
     world.last_result = Some(cmd::show::run(Some(&partial_id)).map(|_| ()));
 }
+
+// Priority commands
+#[when(expr = "the user sets priority of the last issue to {string}")]
+fn user_sets_priority(world: &mut MothWorld, position: String) {
+    let id = world.last_issue_id.clone().expect("No issue ID available");
+    world.last_result = Some(cmd::priority::run(&id, &position, None, None).map(|_| ()));
+}
+
+#[when("the user compacts priorities")]
+fn user_compacts_priorities(world: &mut MothWorld) {
+    world.last_result = Some(cmd::priority::compact(None).map(|_| ()));
+}
+
+// Severity commands
+#[when(expr = "the user changes severity of the last issue to {string}")]
+fn user_changes_severity(world: &mut MothWorld, level: String) {
+    let id = world.last_issue_id.clone().expect("No issue ID available");
+    let severity = level.parse();
+    match severity {
+        Ok(sev) => {
+            world.last_result = Some(cmd::severity::run(&id, sev).map(|_| ()));
+        }
+        Err(_) => {
+            world.last_result = Some(Err(anyhow::anyhow!("Invalid severity: {}", level)));
+        }
+    }
+}
+
+#[when(expr = "the user changes severity of issue {string} to {string}")]
+fn user_changes_severity_by_id(world: &mut MothWorld, id: String, level: String) {
+    let severity = level.parse();
+    match severity {
+        Ok(sev) => {
+            world.last_result = Some(cmd::severity::run(&id, sev).map(|_| ()));
+        }
+        Err(_) => {
+            world.last_result = Some(Err(anyhow::anyhow!("Invalid severity: {}", level)));
+        }
+    }
+}
+
+// Hook commands
+#[when("the user installs the hook")]
+fn user_installs_hook(world: &mut MothWorld) {
+    world.last_result = Some(cmd::hook::install(false, false).map(|_| ()));
+}
+
+#[when("the user installs the hook with force")]
+fn user_installs_hook_force(world: &mut MothWorld) {
+    world.last_result = Some(cmd::hook::install(true, false).map(|_| ()));
+}
+
+#[when("the user uninstalls the hook")]
+fn user_uninstalls_hook(world: &mut MothWorld) {
+    world.last_result = Some(cmd::hook::uninstall().map(|_| ()));
+}

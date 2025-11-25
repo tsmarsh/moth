@@ -376,4 +376,148 @@ mod tests {
         assert_eq!(changes.len(), 1);
         assert!(matches!(changes[0].1, ChangeEvent::Deleted));
     }
+
+    #[test]
+    fn test_change_event_as_str() {
+        assert_eq!(ChangeEvent::Created.as_str(), "created");
+        assert_eq!(ChangeEvent::Moved.as_str(), "moved");
+        assert_eq!(ChangeEvent::Edited.as_str(), "edited");
+        assert_eq!(ChangeEvent::Deleted.as_str(), "deleted");
+    }
+
+    #[test]
+    fn test_parse_story_filename_invalid() {
+        // Too few parts
+        assert!(parse_story_filename("invalid.md").is_none());
+        assert!(parse_story_filename("only-two.md").is_none());
+        // No .md extension
+        assert!(parse_story_filename("abc-med-slug").is_none());
+    }
+
+    #[test]
+    fn test_detect_changes_severity_edit() {
+        let mut prev = HashMap::new();
+        let mut current = HashMap::new();
+
+        let story_prev = StoryState {
+            key: StoryKey {
+                id: "abc123".to_string(),
+                severity: "med".to_string(),
+                slug: "test".to_string(),
+            },
+            column: "ready".to_string(),
+            content: "Test content".to_string(),
+        };
+
+        let mut story_curr = story_prev.clone();
+        story_curr.key.severity = "high".to_string();
+
+        prev.insert("abc123".to_string(), story_prev);
+        current.insert("abc123".to_string(), story_curr);
+
+        let changes = detect_changes(&prev, &current);
+        assert_eq!(changes.len(), 1);
+        assert!(matches!(changes[0].1, ChangeEvent::Edited));
+    }
+
+    #[test]
+    fn test_detect_changes_slug_edit() {
+        let mut prev = HashMap::new();
+        let mut current = HashMap::new();
+
+        let story_prev = StoryState {
+            key: StoryKey {
+                id: "abc123".to_string(),
+                severity: "med".to_string(),
+                slug: "old_slug".to_string(),
+            },
+            column: "ready".to_string(),
+            content: "Test content".to_string(),
+        };
+
+        let mut story_curr = story_prev.clone();
+        story_curr.key.slug = "new_slug".to_string();
+
+        prev.insert("abc123".to_string(), story_prev);
+        current.insert("abc123".to_string(), story_curr);
+
+        let changes = detect_changes(&prev, &current);
+        assert_eq!(changes.len(), 1);
+        assert!(matches!(changes[0].1, ChangeEvent::Edited));
+    }
+
+    #[test]
+    fn test_detect_changes_no_change() {
+        let mut prev = HashMap::new();
+        let mut current = HashMap::new();
+
+        let story = StoryState {
+            key: StoryKey {
+                id: "abc123".to_string(),
+                severity: "med".to_string(),
+                slug: "test".to_string(),
+            },
+            column: "ready".to_string(),
+            content: "Test content".to_string(),
+        };
+
+        prev.insert("abc123".to_string(), story.clone());
+        current.insert("abc123".to_string(), story);
+
+        let changes = detect_changes(&prev, &current);
+        assert_eq!(changes.len(), 0);
+    }
+
+    #[test]
+    fn test_detect_changes_multiple() {
+        let mut prev = HashMap::new();
+        let mut current = HashMap::new();
+
+        // Story 1: will be deleted
+        let story1 = StoryState {
+            key: StoryKey {
+                id: "aaa111".to_string(),
+                severity: "low".to_string(),
+                slug: "deleted".to_string(),
+            },
+            column: "ready".to_string(),
+            content: "Will be deleted".to_string(),
+        };
+        prev.insert("aaa111".to_string(), story1);
+
+        // Story 2: will be moved
+        let story2_prev = StoryState {
+            key: StoryKey {
+                id: "bbb222".to_string(),
+                severity: "med".to_string(),
+                slug: "moved".to_string(),
+            },
+            column: "ready".to_string(),
+            content: "Will be moved".to_string(),
+        };
+        let mut story2_curr = story2_prev.clone();
+        story2_curr.column = "doing".to_string();
+        prev.insert("bbb222".to_string(), story2_prev);
+        current.insert("bbb222".to_string(), story2_curr);
+
+        // Story 3: will be created
+        let story3 = StoryState {
+            key: StoryKey {
+                id: "ccc333".to_string(),
+                severity: "high".to_string(),
+                slug: "created".to_string(),
+            },
+            column: "ready".to_string(),
+            content: "Newly created".to_string(),
+        };
+        current.insert("ccc333".to_string(), story3);
+
+        let changes = detect_changes(&prev, &current);
+        assert_eq!(changes.len(), 3);
+
+        // Changes are sorted by ID
+        assert!(matches!(changes[0].1, ChangeEvent::Deleted)); // aaa111
+        assert!(matches!(changes[1].1, ChangeEvent::Moved)); // bbb222
+        assert!(matches!(changes[2].1, ChangeEvent::Created)); // ccc333
+    }
 }

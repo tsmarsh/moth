@@ -240,4 +240,22 @@ mod tests {
         );
         assert_eq!(title_to_slug("API/REST endpoint"), "api_rest_endpoint");
     }
+
+    #[test]
+    fn test_title_to_slug_edge_cases() {
+        // Leading/trailing whitespace
+        assert_eq!(title_to_slug("  trim me  "), "trim_me");
+        // Special characters
+        assert_eq!(title_to_slug("Fix #123: Bug!"), "fix_123_bug");
+        // Mixed case
+        assert_eq!(title_to_slug("CamelCase Title"), "camelcase_title");
+        // Numbers
+        assert_eq!(title_to_slug("Version 2.0 Release"), "version_2_0_release");
+        // Underscores preserved
+        assert_eq!(title_to_slug("snake_case_title"), "snake_case_title");
+        // Empty after processing
+        assert_eq!(title_to_slug("   "), "");
+        // Unicode (non-ASCII becomes underscore)
+        assert_eq!(title_to_slug("Café Mode"), "caf_mode");
+    }
 }

@@ -60,3 +60,35 @@ fn multiple_issues_exist(world: &mut MothWorld, count: usize) {
     }
     world.last_issue_id = get_last_issue_id();
 }
+
+#[given("a git repository is initialized")]
+fn git_repo_initialized(_world: &mut MothWorld) {
+    std::process::Command::new("git")
+        .args(["init"])
+        .output()
+        .expect("Failed to init git repo");
+    std::process::Command::new("git")
+        .args(["config", "user.email", "test@test.com"])
+        .output()
+        .expect("Failed to set git email");
+    std::process::Command::new("git")
+        .args(["config", "user.name", "Test User"])
+        .output()
+        .expect("Failed to set git name");
+}
+
+#[given("the hook is installed")]
+fn hook_is_installed(_world: &mut MothWorld) {
+    cmd::hook::install(false, false).expect("Failed to install hook");
+}
+
+#[given("a custom prepare-commit-msg hook exists")]
+fn custom_hook_exists(_world: &mut MothWorld) {
+    let hooks_dir = std::path::PathBuf::from(".git/hooks");
+    std::fs::create_dir_all(&hooks_dir).expect("Failed to create hooks dir");
+    std::fs::write(
+        hooks_dir.join("prepare-commit-msg"),
+        "#!/bin/bash\necho custom",
+    )
+    .expect("Failed to write custom hook");
+}

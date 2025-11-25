@@ -191,3 +191,53 @@ fn partial_id_works(world: &mut MothWorld) {
 
     assert!(result.is_ok(), "Partial ID lookup should succeed");
 }
+
+// Priority assertions
+#[then(expr = "the issue has priority {int}")]
+fn issue_has_priority(world: &mut MothWorld, expected_priority: u32) {
+    world.set_current_dir();
+    let id = world.last_issue_id.as_ref().expect("No issue ID");
+    let config = Config::load().expect("Failed to load config");
+    let store = Store::new(config).expect("Failed to create store");
+    let issue = store.find(id).expect("Failed to find issue");
+
+    assert_eq!(
+        issue.order,
+        Some(expected_priority),
+        "Expected priority {}, got {:?}",
+        expected_priority,
+        issue.order
+    );
+}
+
+#[then("the issue has no priority")]
+fn issue_has_no_priority(world: &mut MothWorld) {
+    world.set_current_dir();
+    let id = world.last_issue_id.as_ref().expect("No issue ID");
+    let config = Config::load().expect("Failed to load config");
+    let store = Store::new(config).expect("Failed to create store");
+    let issue = store.find(id).expect("Failed to find issue");
+
+    assert!(
+        issue.order.is_none(),
+        "Expected no priority, got {:?}",
+        issue.order
+    );
+}
+
+// Hook assertions
+#[then("the prepare-commit-msg hook exists")]
+fn hook_exists(world: &mut MothWorld) {
+    let hook_path = world.moth_path().join(".git/hooks/prepare-commit-msg");
+    assert!(hook_path.exists(), "Hook should exist at {:?}", hook_path);
+}
+
+#[then("the prepare-commit-msg hook does not exist")]
+fn hook_does_not_exist(world: &mut MothWorld) {
+    let hook_path = world.moth_path().join(".git/hooks/prepare-commit-msg");
+    assert!(
+        !hook_path.exists(),
+        "Hook should not exist at {:?}",
+        hook_path
+    );
+}
