@@ -6,16 +6,44 @@ on:
       - 'v*'
 
 jobs:
+  # First, verify that CI passed for this commit
+  verify-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check CI status
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the commit SHA for this tag
+          COMMIT_SHA=$(gh api repos/${{ github.repository }}/git/ref/tags/${GITHUB_REF_NAME} --jq '.object.sha')
+
+          # Check if CI workflow succeeded for this commit
+          CONCLUSION=$(gh api repos/${{ github.repository }}/actions/runs \
+            --jq ".workflow_runs[] | select(.head_sha == \"$COMMIT_SHA\" and .name == \"CI\") | .conclusion" \
+            | head -1)
+
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "❌ CI has not passed for commit $COMMIT_SHA"
+            echo "CI status: $CONCLUSION"
+            echo "Please ensure CI passes before creating a release tag."
+            exit 1
+          fi
+
+          echo "✅ CI passed for commit $COMMIT_SHA"
+
   build-linux-deb:
+    needs: verify-ci
     strategy:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             arch: amd64
+            use_cross: false
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             arch: arm64
+            use_cross: true
 
     runs-on: ${{ matrix.os }}
 
@@ -27,22 +55,23 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install cross
+        if: matrix.use_cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
       - name: Install cargo-deb
         run: cargo install cargo-deb
 
-      - name: Install cross-compilation tools
-        if: matrix.arch == 'arm64'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Build binary (native)
+        if: ${{ !matrix.use_cross }}
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build binary (cross)
+        if: matrix.use_cross
+        run: cross build --release --target ${{ matrix.target }}
 
       - name: Build .deb package
-        run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            cargo deb --target ${{ matrix.target }} --no-build --no-strip
-          else
-            cargo deb
-          fi
+        run: cargo deb --target ${{ matrix.target }} --no-build
 
       - name: Rename .deb file
         run: |
@@ -56,6 +85,7 @@ jobs:
           path: moth_*.deb
 
   build-macos:
+    needs: verify-ci
     strategy:
       matrix:
         include:
@@ -93,8 +123,75 @@ jobs:
             target/${{ matrix.target }}/release/moth-*.tar.gz
             target/${{ matrix.target }}/release/moth-*.tar.gz.sha256
 
+  build-windows:
+    needs: verify-ci
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Create zip archive
+        run: |
+          $VERSION = "$env:GITHUB_REF_NAME"
+          Compress-Archive -Path "target\release\moth.exe" -DestinationPath "moth-${VERSION}-x86_64-windows.zip"
+        shell: pwsh
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moth-windows-zip
+          path: moth-*-windows.zip
+
+      # MSI installer (optional - requires wix/ directory in repo)
+      - name: Check for WiX configuration
+        id: wix-check
+        run: |
+          if (Test-Path "wix\main.wxs") {
+            echo "has_wix=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "has_wix=false" >> $env:GITHUB_OUTPUT
+            Write-Host "No wix/main.wxs found - skipping MSI build"
+            Write-Host "Run 'cargo wix init' locally and commit wix/ directory to enable MSI builds"
+          }
+        shell: pwsh
+
+      - name: Install WiX Toolset
+        if: steps.wix-check.outputs.has_wix == 'true'
+        run: |
+          dotnet tool install --global wix --version 4.0.5
+          wix extension add WixToolset.UI.wixext/4.0.5 -g
+
+      - name: Install cargo-wix
+        if: steps.wix-check.outputs.has_wix == 'true'
+        run: cargo install cargo-wix
+
+      - name: Build MSI installer
+        if: steps.wix-check.outputs.has_wix == 'true'
+        run: cargo wix --no-build --nocapture
+
+      - name: Rename MSI file
+        if: steps.wix-check.outputs.has_wix == 'true'
+        run: |
+          $MSI_FILE = Get-ChildItem -Path "target\wix\*.msi" | Select-Object -First 1
+          $VERSION = "$env:GITHUB_REF_NAME" -replace '^v', ''
+          Move-Item $MSI_FILE.FullName "moth-${VERSION}-x86_64.msi"
+        shell: pwsh
+
+      - name: Upload MSI artifact
+        if: steps.wix-check.outputs.has_wix == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: moth-windows-msi
+          path: moth-*.msi
+
   create-release:
-    needs: [build-linux-deb, build-macos]
+    needs: [build-linux-deb, build-macos, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -114,15 +211,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Collect all release files
+          FILES=(
+            artifacts/moth-x86_64/*.tar.gz
+            artifacts/moth-x86_64/*.sha256
+            artifacts/moth-aarch64/*.tar.gz
+            artifacts/moth-aarch64/*.sha256
+            artifacts/moth-deb-amd64/*.deb
+            artifacts/moth-deb-arm64/*.deb
+            artifacts/moth-windows-zip/*.zip
+          )
+
+          # Add MSI if it exists
+          if ls artifacts/moth-windows-msi/*.msi 1> /dev/null 2>&1; then
+            FILES+=(artifacts/moth-windows-msi/*.msi)
+          fi
+
           gh release create ${GITHUB_REF_NAME} \
             --title "Release ${GITHUB_REF_NAME}" \
             --notes "Release ${GITHUB_REF_NAME}" \
-            artifacts/moth-x86_64/*.tar.gz \
-            artifacts/moth-x86_64/*.sha256 \
-            artifacts/moth-aarch64/*.tar.gz \
-            artifacts/moth-aarch64/*.sha256 \
-            artifacts/moth-deb-amd64/*.deb \
-            artifacts/moth-deb-arm64/*.deb
+            "${FILES[@]}"
 
       - name: Extract SHA256 hashes
         id: hashes
