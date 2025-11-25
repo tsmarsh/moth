@@ -1,3 +1,4 @@
+use crate::issue::parse_issue_prefix;
 use anyhow::{Context, Result, anyhow};
 use git2::{Commit, Repository};
 use std::collections::HashMap;
@@ -22,6 +23,7 @@ enum ChangeEvent {
     Moved,
     Edited,
     Deleted,
+    CodeCommit,
 }
 
 impl ChangeEvent {
@@ -31,6 +33,7 @@ impl ChangeEvent {
             ChangeEvent::Moved => "moved",
             ChangeEvent::Edited => "edited",
             ChangeEvent::Deleted => "deleted",
+            ChangeEvent::CodeCommit => "code_commit",
         }
     }
 }
@@ -43,7 +46,7 @@ pub fn run(since: Option<&str>, until: Option<&str>) -> Result<()> {
 
     // Print CSV header
     println!(
-        "commit_sha,commit_date,committer_name,committer_email,story_id,severity,column,event"
+        "commit_sha,commit_date,committer_name,committer_email,story_id,severity,column,event,message"
     );
 
     // Track previous state
@@ -53,24 +56,46 @@ pub fn run(since: Option<&str>, until: Option<&str>) -> Result<()> {
         let current_state = extract_stories(&repo, &commit)?;
         let changes = detect_changes(&prev_state, &current_state);
 
-        // Output changes for this commit
-        for (story_id, event, story) in changes {
-            let commit_time = commit.committer().when();
-            let timestamp = chrono::DateTime::from_timestamp(commit_time.seconds(), 0)
-                .unwrap_or_default()
-                .format("%Y-%m-%dT%H:%M:%SZ");
+        let commit_time = commit.committer().when();
+        let timestamp = chrono::DateTime::from_timestamp(commit_time.seconds(), 0)
+            .unwrap_or_default()
+            .format("%Y-%m-%dT%H:%M:%SZ");
 
+        // Output .moth file changes
+        for (story_id, event, story) in &changes {
             println!(
-                "{},{},{},{},{},{},{},{}",
+                "{},{},{},{},{},{},{},{},",
                 commit.id(),
                 timestamp,
                 escape_csv(commit.committer().name().unwrap_or("")),
                 escape_csv(commit.committer().email().unwrap_or("")),
-                escape_csv(&story_id),
+                escape_csv(story_id),
                 escape_csv(&story.key.severity),
                 escape_csv(&story.column),
                 event.as_str()
             );
+        }
+
+        // Check for code commit referencing an issue
+        if let Some((issue_id, message)) = parse_issue_prefix(commit.message().unwrap_or("")) {
+            // Look up issue state (try current, fall back to prev)
+            if let Some(story) = current_state
+                .get(&issue_id)
+                .or_else(|| prev_state.get(&issue_id))
+            {
+                println!(
+                    "{},{},{},{},{},{},{},{},{}",
+                    commit.id(),
+                    timestamp,
+                    escape_csv(commit.committer().name().unwrap_or("")),
+                    escape_csv(commit.committer().email().unwrap_or("")),
+                    escape_csv(&issue_id),
+                    escape_csv(&story.key.severity),
+                    escape_csv(&story.column),
+                    ChangeEvent::CodeCommit.as_str(),
+                    escape_csv(&message)
+                );
+            }
         }
 
         prev_state = current_state;
@@ -383,6 +408,7 @@ mod tests {
         assert_eq!(ChangeEvent::Moved.as_str(), "moved");
         assert_eq!(ChangeEvent::Edited.as_str(), "edited");
         assert_eq!(ChangeEvent::Deleted.as_str(), "deleted");
+        assert_eq!(ChangeEvent::CodeCommit.as_str(), "code_commit");
     }
 
     #[test]

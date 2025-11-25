@@ -49,8 +49,8 @@ fi
 # Read existing message
 MSG=$(cat "$COMMIT_MSG_FILE")
 
-# Skip if already tagged with this or any story ID
-if echo "$MSG" | grep -qE '^\[[a-z0-9]+\]'; then
+# Skip if already tagged - use moth prefix for single source of truth
+if moth prefix "$MSG" >/dev/null 2>&1; then
     exit 0
 fi
 

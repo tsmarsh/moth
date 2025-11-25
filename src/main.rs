@@ -144,6 +144,12 @@ enum Commands {
         #[arg(help = "Shell type: bash, zsh, or fish")]
         shell: String,
     },
+
+    #[command(about = "Check for issue ID prefix in a message (used by git hook)")]
+    Prefix {
+        #[arg(help = "The message to check")]
+        message: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -242,6 +248,7 @@ fn main() {
             generate_completions(&shell);
             return;
         }
+        Commands::Prefix { message } => cmd::prefix::check(&message),
     };
 
     if let Err(e) = result {

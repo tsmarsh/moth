@@ -149,6 +149,46 @@ pub fn generate_id(length: usize) -> String {
     format!("{}{}", first, rest)
 }
 
+/// Extract issue ID from a commit message prefix.
+/// Returns the issue ID if the message starts with [id] format, None otherwise.
+///
+/// # Format
+/// Messages must start with `[id]` where id is lowercase alphanumeric.
+/// Example: "[abc12] Fix the login bug" -> Some("abc12")
+pub fn extract_issue_id(message: &str) -> Option<String> {
+    let first_line = message.lines().next()?;
+
+    if !first_line.starts_with('[') {
+        return None;
+    }
+
+    let end_bracket = first_line.find(']')?;
+    let id = &first_line[1..end_bracket];
+
+    // Validate: must be non-empty, lowercase alphanumeric only
+    if id.is_empty()
+        || !id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+    {
+        return None;
+    }
+
+    Some(id.to_string())
+}
+
+/// Extract issue ID and remaining message from a commit message.
+/// Returns (id, message_without_prefix) if valid prefix found.
+pub fn parse_issue_prefix(message: &str) -> Option<(String, String)> {
+    let first_line = message.lines().next()?;
+    let id = extract_issue_id(message)?;
+
+    let prefix_end = first_line.find(']')? + 1;
+    let rest = first_line[prefix_end..].trim_start().to_string();
+
+    Some((id, rest))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,5 +249,78 @@ mod tests {
             id.chars()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
         );
+    }
+
+    #[test]
+    fn test_extract_issue_id_valid() {
+        assert_eq!(
+            extract_issue_id("[abc12] Fix bug"),
+            Some("abc12".to_string())
+        );
+    }
+
+    #[test]
+    fn test_extract_issue_id_no_space() {
+        assert_eq!(
+            extract_issue_id("[abc12]Fix bug"),
+            Some("abc12".to_string())
+        );
+    }
+
+    #[test]
+    fn test_extract_issue_id_no_prefix() {
+        assert_eq!(extract_issue_id("No prefix here"), None);
+    }
+
+    #[test]
+    fn test_extract_issue_id_uppercase_rejected() {
+        assert_eq!(extract_issue_id("[ABC12] Upper"), None);
+    }
+
+    #[test]
+    fn test_extract_issue_id_special_chars_rejected() {
+        assert_eq!(extract_issue_id("[abc-12] Hyphen"), None);
+    }
+
+    #[test]
+    fn test_extract_issue_id_empty_brackets() {
+        assert_eq!(extract_issue_id("[] Empty"), None);
+    }
+
+    #[test]
+    fn test_extract_issue_id_multiline() {
+        assert_eq!(
+            extract_issue_id("[abc12] First line\nSecond line"),
+            Some("abc12".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_issue_prefix_valid() {
+        assert_eq!(
+            parse_issue_prefix("[abc12] Fix bug"),
+            Some(("abc12".to_string(), "Fix bug".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_issue_prefix_no_message() {
+        assert_eq!(
+            parse_issue_prefix("[abc12]"),
+            Some(("abc12".to_string(), "".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_issue_prefix_extra_spaces() {
+        assert_eq!(
+            parse_issue_prefix("[abc12]   Lots of spaces"),
+            Some(("abc12".to_string(), "Lots of spaces".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_parse_issue_prefix_no_prefix() {
+        assert_eq!(parse_issue_prefix("No prefix"), None);
     }
 }
