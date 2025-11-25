@@ -173,6 +173,44 @@ impl Store {
     pub fn config(&self) -> &Config {
         &self.config
     }
+
+    pub fn current(&self) -> Result<Option<Issue>> {
+        let doing_status = self
+            .config
+            .get_status("doing")
+            .ok_or_else(|| anyhow!("'doing' status not configured"))?;
+        let doing_dir = self.config.status_dir(doing_status);
+
+        if !doing_dir.exists() {
+            return Ok(None);
+        }
+
+        let mut latest_issue: Option<Issue> = None;
+        let mut latest_time = std::time::SystemTime::UNIX_EPOCH;
+
+        let entries = fs::read_dir(&doing_dir)
+            .with_context(|| format!("Failed to read directory: {}", doing_dir.display()))?;
+
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                let metadata = fs::metadata(&path)?;
+                let modified_time = metadata.modified()?;
+
+                if modified_time > latest_time {
+                    latest_time = modified_time;
+                    match Issue::from_path(&path, "doing") {
+                        Ok(issue) => latest_issue = Some(issue),
+                        Err(e) => eprintln!("Warning: Failed to parse {}: {}", path.display(), e),
+                    }
+                }
+            }
+        }
+
+        Ok(latest_issue)
+    }
 }
 
 fn title_to_slug(title: &str) -> String {
