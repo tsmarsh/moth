@@ -6,6 +6,55 @@ on:
       - 'v*'
 
 jobs:
+  build-linux-deb:
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            arch: amd64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Install cross-compilation tools
+        if: matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build .deb package
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            cargo deb --target ${{ matrix.target }} --no-build --no-strip
+          else
+            cargo deb
+          fi
+
+      - name: Rename .deb file
+        run: |
+          DEB_FILE=$(ls target/${{ matrix.target }}/debian/*.deb 2>/dev/null || ls target/debian/*.deb)
+          mv "$DEB_FILE" "moth_${GITHUB_REF_NAME#v}_${{ matrix.arch }}.deb"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moth-deb-${{ matrix.arch }}
+          path: moth_*.deb
+
   build-macos:
     strategy:
       matrix:
@@ -45,7 +94,7 @@ jobs:
             target/${{ matrix.target }}/release/moth-*.tar.gz.sha256
 
   create-release:
-    needs: build-macos
+    needs: [build-linux-deb, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -71,7 +120,9 @@ jobs:
             artifacts/moth-x86_64/*.tar.gz \
             artifacts/moth-x86_64/*.sha256 \
             artifacts/moth-aarch64/*.tar.gz \
-            artifacts/moth-aarch64/*.sha256
+            artifacts/moth-aarch64/*.sha256 \
+            artifacts/moth-deb-amd64/*.deb \
+            artifacts/moth-deb-arm64/*.deb
 
       - name: Extract SHA256 hashes
         id: hashes
@@ -83,6 +134,7 @@ jobs:
           echo "version=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
       - name: Update Homebrew formula
+        if: secrets.HOMEBREW_TAP_TOKEN != ''
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           VERSION: ${{ steps.hashes.outputs.version }}
@@ -105,5 +157,30 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Formula/moth.rb
+          git commit -m "Update moth to ${VERSION}"
+          git push
+
+      - name: Update APT repository
+        if: secrets.HOMEBREW_TAP_TOKEN != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.hashes.outputs.version }}
+        run: |
+          # Clone the apt repository
+          git clone https://x-access-token:${GITHUB_TOKEN}@github.com/tsmarsh/apt-moth.git
+          cd apt-moth
+
+          # Copy .deb files to pool
+          cp ../artifacts/moth-deb-amd64/*.deb pool/main/
+          cp ../artifacts/moth-deb-arm64/*.deb pool/main/
+
+          # Generate repository metadata
+          chmod +x update-repo.sh
+          ./update-repo.sh
+
+          # Commit and push
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add pool/ dists/
           git commit -m "Update moth to ${VERSION}"
           git push

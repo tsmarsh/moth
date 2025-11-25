@@ -33,6 +33,19 @@ brew tap tsmarsh/moth
 brew install moth
 ```
 
+### Ubuntu/Debian (APT)
+
+```bash
+# Add the repository
+echo "deb [trusted=yes] https://tsmarsh.github.io/apt-moth stable main" | sudo tee /etc/apt/sources.list.d/moth.list
+
+# Update and install
+sudo apt update
+sudo apt install moth
+```
+
+Supported architectures: `amd64`, `arm64`
+
 ### From Source
 
 ```bash
