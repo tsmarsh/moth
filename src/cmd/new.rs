@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::issue::Priority;
 use crate::store::Store;
-use anyhow::Result;
+use anyhow::{Context, Result, anyhow};
 use std::process::Command;
 use std::str::FromStr;
 
@@ -21,9 +21,20 @@ pub fn run(title: &str, priority: Option<&str>, skip_editor: bool) -> Result<()>
         issue.priority
     );
 
-    if !skip_editor {
+    // If user did not explicitly skip editor AND no_edit_on_new is true, return an error.
+    if !skip_editor && store.config().no_edit_on_new {
+        return Err(anyhow!(
+            "Editing is disabled by configuration (no_edit_on_new: true)."
+        ));
+    }
+
+    // If user did not explicitly skip editor AND no_edit_on_new is false, open editor.
+    if !skip_editor && !store.config().no_edit_on_new {
         let editor = &store.config().editor;
-        Command::new(editor).arg(&issue.path).status().ok();
+        Command::new(editor)
+            .arg(&issue.path)
+            .status()
+            .with_context(|| format!("Failed to open editor: {}", editor))?;
     }
 
     Ok(())
