@@ -460,8 +460,19 @@ fn test_e2e_new_respects_no_edit_config() {
 
     // Try to create a new issue without --no-edit
     let (success, _stdout, stderr) = run_moth_cmd(&["new", "Test issue with no_edit"], temp_path);
-    assert!(!success);
-    assert!(stderr.contains("Editing is disabled by configuration (no_edit: true)."));
+    assert!(success, "Command failed: {}", stderr);
+
+    // Verify that the issue was created
+    let ready_dir = temp_path.join(".moth/ready");
+    let entries: Vec<_> = std::fs::read_dir(&ready_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .collect();
+    assert_eq!(entries.len(), 1);
+    let entry = &entries[0];
+    let file_name = entry.file_name();
+    let name = file_name.to_string_lossy();
+    assert!(name.contains("test_issue_with_no_edit"));
 }
 
 #[test]

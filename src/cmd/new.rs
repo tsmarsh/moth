@@ -2,7 +2,7 @@ use crate::cmd::start;
 use crate::config::Config;
 use crate::issue::Severity;
 use crate::store::Store;
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use std::process::Command;
 use std::str::FromStr;
 
@@ -24,13 +24,6 @@ pub fn run(title: &str, severity: Option<&str>, skip_editor: bool, start: bool) 
 
     if start {
         start::run(&issue.id)?;
-    }
-
-    // If user did not explicitly skip editor AND no_edit is true, return an error.
-    if !skip_editor && store.config().no_edit {
-        return Err(anyhow!(
-            "Editing is disabled by configuration (no_edit: true)."
-        ));
     }
 
     // If user did not explicitly skip editor AND no_edit is false, open editor.

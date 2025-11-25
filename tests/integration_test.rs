@@ -464,11 +464,12 @@ fn test_new_respects_no_edit_config() {
 
     // Try to create a new issue without skipping editor
     let result = cmd::new::run("Test issue with no_edit", None, false, false);
-    assert!(result.is_err());
-    assert!(
-        result
-            .unwrap_err()
-            .to_string()
-            .contains("Editing is disabled by configuration (no_edit: true).")
-    );
+    assert!(result.is_ok());
+
+    // Verify that the issue was created
+    let config = Config::load().unwrap();
+    let store = Store::new(config).unwrap();
+    let issues = store.all_issues().unwrap();
+    assert_eq!(issues.len(), 1);
+    assert_eq!(issues[0].slug, "test_issue_with_no_edit");
 }
