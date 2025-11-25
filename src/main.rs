@@ -35,6 +35,9 @@ enum Commands {
 
         #[arg(long, help = "Skip opening editor")]
         no_edit: bool,
+
+        #[arg(long, help = "Start the issue immediately (move to 'doing' status)")]
+        start: bool,
     },
 
     #[command(about = "List issues")]
@@ -171,7 +174,8 @@ fn main() {
             title,
             priority,
             no_edit,
-        } => cmd::new::run(&title, priority.as_deref(), no_edit),
+            start,
+        } => cmd::new::run(&title, priority.as_deref(), no_edit, start),
         Commands::Ls { status, all } => cmd::list::run(status.as_deref(), all),
         Commands::Show { id } => cmd::show::run(id.as_deref()),
         Commands::Start { id } => cmd::start::run(&id),

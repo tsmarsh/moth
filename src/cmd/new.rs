@@ -1,3 +1,4 @@
+use crate::cmd::start;
 use crate::config::Config;
 use crate::issue::Priority;
 use crate::store::Store;
@@ -5,7 +6,7 @@ use anyhow::{Context, Result, anyhow};
 use std::process::Command;
 use std::str::FromStr;
 
-pub fn run(title: &str, priority: Option<&str>, skip_editor: bool) -> Result<()> {
+pub fn run(title: &str, priority: Option<&str>, skip_editor: bool, start: bool) -> Result<()> {
     let config = Config::load()?;
     let store = Store::new(config)?;
 
@@ -20,6 +21,10 @@ pub fn run(title: &str, priority: Option<&str>, skip_editor: bool) -> Result<()>
         issue.title(),
         issue.priority
     );
+
+    if start {
+        start::run(&issue.id)?;
+    }
 
     // If user did not explicitly skip editor AND no_edit_on_new is true, return an error.
     if !skip_editor && store.config().no_edit_on_new {
