@@ -17,6 +17,13 @@ chrono = "0.4"
 [dev-dependencies]
 tempfile = "3"
 serial_test = "3"
+cucumber = "0.21"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+futures = "0.3"
+
+[[test]]
+name = "cucumber"
+harness = false
 
 [package.metadata.deb]
 maintainer = "Tom Marsh <tsmarsh@gmail.com>"
