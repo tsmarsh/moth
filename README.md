@@ -26,6 +26,15 @@ Moth focuses on tracking the number of completed issues rather than story points
 
 ## Installation
 
+### macOS (Homebrew)
+
+```bash
+brew tap tsmarsh/moth
+brew install moth
+```
+
+### From Source
+
 ```bash
 cargo build --release
 ```
