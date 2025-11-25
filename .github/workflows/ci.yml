@@ -53,11 +53,17 @@ jobs:
       - name: Build
         run: cargo build --verbose
 
+      - name: Run unit tests
+        run: cargo test --lib --verbose
+
       - name: Run integration tests
         run: cargo test --test integration_test --verbose
 
       - name: Run e2e shell tests
         run: cargo test --test e2e_shell_test --verbose
+
+      - name: Run BDD cucumber tests
+        run: cargo test --test cucumber --verbose
 
       - name: Run all tests
         run: cargo test --verbose
