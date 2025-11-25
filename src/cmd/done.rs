@@ -1,14 +1,21 @@
 use crate::config::Config;
 use crate::store::Store;
-use anyhow::Result;
+use anyhow::{Context, Result, anyhow};
 use std::fs;
 
-pub fn run(id: &str) -> Result<()> {
+pub fn run(id: Option<&str>) -> Result<()> {
     let config = Config::load()?;
     let store = Store::new(config)?;
 
+    let issue = match id {
+        Some(id) => store.find(id)?,
+        None => store
+            .current()
+            .context("Failed to get current issue")?
+            .ok_or_else(|| anyhow!("No current issue"))?,
+    };
+
     let last_status = store.config().last_status();
-    let issue = store.find(id)?;
     let target_status = &last_status.name;
 
     store.move_issue(&issue, target_status)?;
