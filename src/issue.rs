@@ -132,15 +132,21 @@ impl Issue {
 }
 
 pub fn generate_id(length: usize) -> String {
+    const LETTERS: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
     const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
     let mut rng = rand::thread_rng();
 
-    (0..length)
+    // First character must be a letter to avoid confusion with order numbers
+    let first = LETTERS[rng.gen_range(0..LETTERS.len())] as char;
+
+    let rest: String = (1..length)
         .map(|_| {
             let idx = rng.gen_range(0..CHARSET.len());
             CHARSET[idx] as char
         })
-        .collect()
+        .collect();
+
+    format!("{}{}", first, rest)
 }
 
 #[cfg(test)]
