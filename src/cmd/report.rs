@@ -5,7 +5,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct StoryKey {
     id: String,
-    priority: String,
+    severity: String,
     slug: String,
 }
 
@@ -43,7 +43,7 @@ pub fn run(since: Option<&str>, until: Option<&str>) -> Result<()> {
 
     // Print CSV header
     println!(
-        "commit_sha,commit_date,committer_name,committer_email,story_id,priority,column,event"
+        "commit_sha,commit_date,committer_name,committer_email,story_id,severity,column,event"
     );
 
     // Track previous state
@@ -67,7 +67,7 @@ pub fn run(since: Option<&str>, until: Option<&str>) -> Result<()> {
                 escape_csv(commit.committer().name().unwrap_or("")),
                 escape_csv(commit.committer().email().unwrap_or("")),
                 escape_csv(&story_id),
-                escape_csv(&story.key.priority),
+                escape_csv(&story.key.severity),
                 escape_csv(&story.column),
                 event.as_str()
             );
@@ -162,7 +162,7 @@ fn extract_stories(repo: &Repository, commit: &Commit) -> Result<HashMap<String,
                 continue;
             }
 
-            // Parse the filename: {id}-{priority}-{slug}.md
+            // Parse the filename: {id}-{severity}-{slug}.md
             if let Some(story) = parse_story_filename(filename) {
                 // Get file content
                 let blob = match repo.find_blob(story_entry.id()) {
@@ -199,7 +199,7 @@ fn parse_story_filename(filename: &str) -> Option<StoryKey> {
 
     Some(StoryKey {
         id: parts[0].to_string(),
-        priority: parts[1].to_string(),
+        severity: parts[1].to_string(),
         slug: parts[2].to_string(),
     })
 }
@@ -221,11 +221,11 @@ fn detect_changes(
                 if prev_story.column != curr_story.column {
                     // Story moved to different column
                     changes.push((id.clone(), ChangeEvent::Moved, curr_story.clone()));
-                } else if prev_story.key.priority != curr_story.key.priority
+                } else if prev_story.key.severity != curr_story.key.severity
                     || prev_story.key.slug != curr_story.key.slug
                     || prev_story.content != curr_story.content
                 {
-                    // Story edited (priority, slug, or content changed)
+                    // Story edited (severity, slug, or content changed)
                     changes.push((id.clone(), ChangeEvent::Edited, curr_story.clone()));
                 }
             }
@@ -261,7 +261,7 @@ mod tests {
     fn test_parse_story_filename() {
         let key = parse_story_filename("rxj8y-med-report.md").unwrap();
         assert_eq!(key.id, "rxj8y");
-        assert_eq!(key.priority, "med");
+        assert_eq!(key.severity, "med");
         assert_eq!(key.slug, "report");
     }
 
@@ -269,7 +269,7 @@ mod tests {
     fn test_parse_story_filename_with_hyphenated_slug() {
         let key = parse_story_filename("abc123-high-fix-login-bug.md").unwrap();
         assert_eq!(key.id, "abc123");
-        assert_eq!(key.priority, "high");
+        assert_eq!(key.severity, "high");
         assert_eq!(key.slug, "fix-login-bug");
     }
 
@@ -289,7 +289,7 @@ mod tests {
         let story = StoryState {
             key: StoryKey {
                 id: "abc123".to_string(),
-                priority: "high".to_string(),
+                severity: "high".to_string(),
                 slug: "test".to_string(),
             },
             column: "ready".to_string(),
@@ -311,7 +311,7 @@ mod tests {
         let story_prev = StoryState {
             key: StoryKey {
                 id: "abc123".to_string(),
-                priority: "high".to_string(),
+                severity: "high".to_string(),
                 slug: "test".to_string(),
             },
             column: "ready".to_string(),
@@ -337,7 +337,7 @@ mod tests {
         let story_prev = StoryState {
             key: StoryKey {
                 id: "abc123".to_string(),
-                priority: "high".to_string(),
+                severity: "high".to_string(),
                 slug: "test".to_string(),
             },
             column: "ready".to_string(),
@@ -363,7 +363,7 @@ mod tests {
         let story = StoryState {
             key: StoryKey {
                 id: "abc123".to_string(),
-                priority: "high".to_string(),
+                severity: "high".to_string(),
                 slug: "test".to_string(),
             },
             column: "ready".to_string(),

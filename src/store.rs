@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::issue::{Issue, Priority, generate_id};
+use crate::issue::{Issue, Severity, generate_id};
 use anyhow::{Context, Result, anyhow};
 use std::fs;
 
@@ -83,14 +83,14 @@ impl Store {
         }
 
         issues.sort_by(|a, b| {
-            // First sort by order (if present), then by priority, then by slug
+            // First sort by order (if present), then by severity, then by slug
             match (a.order, b.order) {
                 (Some(a_order), Some(b_order)) => a_order.cmp(&b_order),
                 (Some(_), None) => std::cmp::Ordering::Less,
                 (None, Some(_)) => std::cmp::Ordering::Greater,
                 (None, None) => a
-                    .priority
-                    .cmp(&b.priority)
+                    .severity
+                    .cmp(&b.severity)
                     .then_with(|| a.slug.cmp(&b.slug)),
             }
         });
@@ -131,7 +131,7 @@ impl Store {
         Ok(())
     }
 
-    pub fn create_issue(&self, title: &str, priority: Priority) -> Result<Issue> {
+    pub fn create_issue(&self, title: &str, severity: Severity) -> Result<Issue> {
         if title.trim().is_empty() {
             return Err(anyhow!("Issue title cannot be empty"));
         }
@@ -142,7 +142,7 @@ impl Store {
         let first_status = self.config.first_status();
         let dir = self.config.status_dir(first_status);
 
-        let filename = format!("{}-{}-{}.md", id, priority.as_str(), slug);
+        let filename = format!("{}-{}-{}.md", id, severity.as_str(), slug);
         let path = dir.join(&filename);
 
         fs::write(&path, "")

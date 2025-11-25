@@ -8,5 +8,6 @@ pub mod new;
 pub mod priority;
 pub mod report;
 pub mod rm;
+pub mod severity;
 pub mod show;
 pub mod start;

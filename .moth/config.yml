@@ -6,9 +6,9 @@ statuses:
   dir: doing
 - name: done
   dir: done
-default_priority: med
+default_severity: med
 editor: vi
 id_length: 5
-no_edit: false
+no_edit: true
 priority:
   auto_compact: false

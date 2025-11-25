@@ -60,13 +60,13 @@ fn test_new_creates_issue() {
 
     assert_eq!(issues.len(), 1);
     assert_eq!(issues[0].slug, "fix_login_bug");
-    assert_eq!(issues[0].priority.as_str(), "high");
+    assert_eq!(issues[0].severity.as_str(), "high");
     assert_eq!(issues[0].status, "ready");
 }
 
 #[test]
 #[serial]
-fn test_new_with_default_priority() {
+fn test_new_with_default_severity() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
@@ -78,7 +78,7 @@ fn test_new_with_default_priority() {
     let issues = store.all_issues().unwrap();
 
     assert_eq!(issues.len(), 1);
-    assert_eq!(issues[0].priority.as_str(), "med");
+    assert_eq!(issues[0].severity.as_str(), "med");
 }
 
 #[test]
@@ -94,13 +94,13 @@ fn test_new_fails_with_empty_title() {
 
 #[test]
 #[serial]
-fn test_new_fails_with_invalid_priority() {
+fn test_new_fails_with_invalid_severity() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
     let result = cmd::new::run("Test issue", Some("invalid"), true, false);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("Invalid priority"));
+    assert!(result.unwrap_err().to_string().contains("Invalid severity"));
 }
 
 #[test]
@@ -311,7 +311,7 @@ fn test_full_workflow() {
     let mut issues = store.issues_by_status("ready").unwrap();
     assert_eq!(issues.len(), 2);
 
-    issues.sort_by(|a, b| a.priority.cmp(&b.priority));
+    issues.sort_by(|a, b| a.severity.cmp(&b.severity));
     let high_priority_id = issues[0].id.clone();
 
     cmd::start::run(&high_priority_id).unwrap();
@@ -363,24 +363,24 @@ fn test_partial_id_ambiguous() {
 
 #[test]
 #[serial]
-fn test_issue_sorting_by_priority() {
+fn test_issue_sorting_by_severity() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Low priority issue", Some("low"), true, false).unwrap();
-    cmd::new::run("High priority issue", Some("high"), true, false).unwrap();
+    cmd::new::run("Low severity issue", Some("low"), true, false).unwrap();
+    cmd::new::run("High severity issue", Some("high"), true, false).unwrap();
     cmd::new::run("Critical issue", Some("crit"), true, false).unwrap();
-    cmd::new::run("Medium priority issue", Some("med"), true, false).unwrap();
+    cmd::new::run("Medium severity issue", Some("med"), true, false).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
     let issues = store.issues_by_status("ready").unwrap();
 
     assert_eq!(issues.len(), 4);
-    assert_eq!(issues[0].priority.as_str(), "crit");
-    assert_eq!(issues[1].priority.as_str(), "high");
-    assert_eq!(issues[2].priority.as_str(), "med");
-    assert_eq!(issues[3].priority.as_str(), "low");
+    assert_eq!(issues[0].severity.as_str(), "crit");
+    assert_eq!(issues[1].severity.as_str(), "high");
+    assert_eq!(issues[2].severity.as_str(), "med");
+    assert_eq!(issues[3].severity.as_str(), "low");
 }
 
 #[test]

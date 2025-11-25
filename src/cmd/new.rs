@@ -1,25 +1,25 @@
 use crate::cmd::start;
 use crate::config::Config;
-use crate::issue::Priority;
+use crate::issue::Severity;
 use crate::store::Store;
 use anyhow::{Context, Result, anyhow};
 use std::process::Command;
 use std::str::FromStr;
 
-pub fn run(title: &str, priority: Option<&str>, skip_editor: bool, start: bool) -> Result<()> {
+pub fn run(title: &str, severity: Option<&str>, skip_editor: bool, start: bool) -> Result<()> {
     let config = Config::load()?;
     let store = Store::new(config)?;
 
-    let priority_str = priority.unwrap_or(&store.config().default_priority);
-    let priority = Priority::from_str(priority_str)?;
+    let severity_str = severity.unwrap_or(&store.config().default_severity);
+    let severity = Severity::from_str(severity_str)?;
 
-    let issue = store.create_issue(title, priority)?;
+    let issue = store.create_issue(title, severity)?;
 
     println!(
         "Created {}: {} [{}]",
         issue.id,
         issue.title(),
-        issue.priority
+        issue.severity
     );
 
     if start {

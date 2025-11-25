@@ -68,7 +68,7 @@ fn test_e2e_new_creates_issue() {
 
     run_moth_cmd(&["init"], temp_path);
     let (success, _stdout, stderr) = run_moth_cmd(
-        &["new", "Fix login bug", "--no-edit", "-p", "high"],
+        &["new", "Fix login bug", "--no-edit", "-s", "high"],
         temp_path,
     );
 
@@ -89,18 +89,18 @@ fn test_e2e_new_creates_issue() {
 
 #[test]
 #[serial]
-fn test_e2e_new_with_invalid_priority() {
+fn test_e2e_new_with_invalid_severity() {
     let temp = setup_test_env();
     let temp_path = temp.path();
 
     run_moth_cmd(&["init"], temp_path);
     let (success, _, stderr) = run_moth_cmd(
-        &["new", "Test issue", "--no-edit", "-p", "invalid"],
+        &["new", "Test issue", "--no-edit", "-s", "invalid"],
         temp_path,
     );
 
     assert!(!success);
-    assert!(stderr.contains("Invalid priority"));
+    assert!(stderr.contains("Invalid severity"));
 }
 
 #[test]
@@ -111,13 +111,13 @@ fn test_e2e_ls_shows_issues() {
 
     run_moth_cmd(&["init"], temp_path);
     run_moth_cmd(&["new", "Issue 1", "--no-edit"], temp_path);
-    run_moth_cmd(&["new", "Issue 2", "--no-edit", "-p", "high"], temp_path);
+    run_moth_cmd(&["new", "Issue 2", "--no-edit", "-s", "high"], temp_path);
 
     let (success, stdout, stderr) = run_moth_cmd(&["ls"], temp_path);
 
     assert!(success, "Command failed: {}", stderr);
-    assert!(stdout.contains("Issue 1") || stdout.contains("issue-1"));
-    assert!(stdout.contains("Issue 2") || stdout.contains("issue-2"));
+    assert!(stdout.contains("Issue 1") || stdout.contains("issue_1"));
+    assert!(stdout.contains("Issue 2") || stdout.contains("issue_2"));
 }
 
 #[test]
@@ -129,11 +129,11 @@ fn test_e2e_ls_filters_by_status() {
     run_moth_cmd(&["init"], temp_path);
     run_moth_cmd(&["new", "Ready issue", "--no-edit"], temp_path);
 
-    let (success, stdout, _) = run_moth_cmd(&["ls", "-s", "ready"], temp_path);
+    let (success, stdout, _) = run_moth_cmd(&["ls", "-t", "ready"], temp_path);
     assert!(success);
     assert!(stdout.contains("Ready") || stdout.contains("ready"));
 
-    let (success, stdout, _) = run_moth_cmd(&["ls", "-s", "doing"], temp_path);
+    let (success, stdout, _) = run_moth_cmd(&["ls", "-t", "doing"], temp_path);
     assert!(success);
     assert!(!stdout.contains("Ready") && !stdout.contains("ready"));
 }
@@ -348,7 +348,7 @@ fn test_e2e_full_workflow() {
     let (success, _, _) = run_moth_cmd(&["init"], temp_path);
     assert!(success);
 
-    let (success, _, _) = run_moth_cmd(&["new", "Fix bug", "--no-edit", "-p", "high"], temp_path);
+    let (success, _, _) = run_moth_cmd(&["new", "Fix bug", "--no-edit", "-s", "high"], temp_path);
     assert!(success);
 
     let (success, _, _) = run_moth_cmd(&["new", "Add feature", "--no-edit"], temp_path);
