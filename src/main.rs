@@ -49,7 +49,7 @@ enum Commands {
     #[command(about = "Show issue details")]
     Show {
         #[arg(help = "Issue ID (full or partial)")]
-        id: String,
+        id: Option<String>,
     },
 
     #[command(about = "Move issue to 'doing' status")]
@@ -61,7 +61,7 @@ enum Commands {
     #[command(about = "Move issue to 'done' status")]
     Done {
         #[arg(help = "Issue ID (full or partial)")]
-        id: String,
+        id: Option<String>,
     },
 
     #[command(about = "Move issue to specific status")]
@@ -173,9 +173,9 @@ fn main() {
             no_edit,
         } => cmd::new::run(&title, priority.as_deref(), no_edit),
         Commands::Ls { status, all } => cmd::list::run(status.as_deref(), all),
-        Commands::Show { id } => cmd::show::run(&id),
+        Commands::Show { id } => cmd::show::run(id.as_deref()),
         Commands::Start { id } => cmd::start::run(&id),
-        Commands::Done { id } => cmd::done::run(&id),
+        Commands::Done { id } => cmd::done::run(id.as_deref()),
         Commands::Mv { id, status } => cmd::mv::run(&id, &status),
         Commands::Edit { id } => cmd::edit::run(&id),
         Commands::Rm { id } => cmd::rm::run(&id),

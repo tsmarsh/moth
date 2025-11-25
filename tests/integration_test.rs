@@ -137,7 +137,7 @@ fn test_show_displays_issue_content() {
 
     fs::write(&issues[0].path, "This is the issue content").unwrap();
 
-    let result = cmd::show::run(id);
+    let result = cmd::show::run(Some(id));
     assert!(result.is_ok());
 }
 
@@ -154,7 +154,7 @@ fn test_show_with_partial_id() {
     let issues = store.all_issues().unwrap();
     let partial_id = &issues[0].id[..3];
 
-    let result = cmd::show::run(partial_id);
+    let result = cmd::show::run(Some(partial_id));
     assert!(result.is_ok());
 }
 
@@ -164,7 +164,7 @@ fn test_show_fails_with_nonexistent_id() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    let result = cmd::show::run("nonexistent");
+    let result = cmd::show::run(Some("nonexistent"));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("No issue found"));
 }
@@ -207,7 +207,7 @@ fn test_done_moves_issue_to_done() {
     let issues = store.all_issues().unwrap();
     let id = issues[0].id.clone();
 
-    cmd::done::run(&id).unwrap();
+    cmd::done::run(Some(&id)).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -324,7 +324,7 @@ fn test_full_workflow() {
     assert_eq!(ready_issues.len(), 1);
     assert_eq!(doing_issues.len(), 1);
 
-    cmd::done::run(&high_priority_id).unwrap();
+    cmd::done::run(Some(&high_priority_id)).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
