@@ -63,6 +63,9 @@ moth init
 # Create a new issue
 moth new "Fix login bug" -p high
 
+# Create and immediately start working on an issue
+moth new "Urgent fix" -p crit --start
+
 # List issues
 moth ls
 
@@ -72,8 +75,14 @@ moth start x7k2m
 # Mark issue as done (clears current story)
 moth done x7k2m
 
+# Mark current issue as done (no ID needed)
+moth done
+
 # Show issue details
 moth show x7k2m
+
+# Show current issue details (no ID needed)
+moth show
 
 # Edit issue content
 moth edit x7k2m
@@ -103,11 +112,11 @@ moth report --since HEAD~10
 | Command | Description |
 |---------|-------------|
 | `moth init` | Create `.moth/` structure with default config |
-| `moth new "<title>" [-p priority]` | Create issue in first status |
+| `moth new "<title>" [-p priority] [--start]` | Create issue in first status (optionally start immediately) |
 | `moth ls [-s status] [-a]` | List issues (default: all except last status) |
-| `moth show <id>` | Display issue content |
+| `moth show [id]` | Display issue content (current issue if no ID) |
 | `moth start <id>` | Move issue to `statuses[1]` and set as current |
-| `moth done <id>` | Move issue to `statuses[-1]` and clear current |
+| `moth done [id]` | Move issue to `statuses[-1]` (current issue if no ID) |
 | `moth mv <id> <status>` | Move issue to any status |
 | `moth edit <id>` | Open issue in editor |
 | `moth rm <id>` | Delete an issue |
@@ -154,6 +163,9 @@ editor: nvim
 
 # ID generation length (3-10)
 id_length: 5
+
+# Skip editor when creating issues (useful for quick issue creation)
+no_edit_on_new: false
 
 # Priority ordering settings
 priority:
@@ -301,8 +313,8 @@ cargo test --test e2e_shell_test
 ```
 
 The project includes:
-- **19 integration tests**: Direct function testing
-- **17 e2e shell tests**: Full CLI workflow testing via shell commands
+- **24 integration tests**: Direct function testing
+- **19 e2e shell tests**: Full CLI workflow testing via shell commands
 
 ## License
 
