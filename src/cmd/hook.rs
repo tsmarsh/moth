@@ -1,8 +1,10 @@
 use crate::config::Config;
 use anyhow::{Context, Result, anyhow};
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
+
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 
 const HOOK_MARKER: &str = "# MOTH_HOOK_MARKER";
 const HOOK_SCRIPT: &str = r#"#!/bin/bash
