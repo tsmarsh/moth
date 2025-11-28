@@ -1,3 +1,4 @@
+pub mod claude;
 pub mod done;
 pub mod edit;
 pub mod hook;

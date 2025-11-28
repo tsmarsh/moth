@@ -150,6 +150,15 @@ enum Commands {
         #[arg(help = "The message to check")]
         message: String,
     },
+
+    #[command(about = "Create CLAUDE.md with moth agent guide for LLM assistants")]
+    Claude {
+        #[arg(long, help = "Overwrite existing CLAUDE.md")]
+        force: bool,
+
+        #[arg(long, help = "Append to existing CLAUDE.md")]
+        append: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -249,6 +258,13 @@ fn main() {
             return;
         }
         Commands::Prefix { message } => cmd::prefix::check(&message),
+        Commands::Claude { force, append } => {
+            if append {
+                cmd::claude::append()
+            } else {
+                cmd::claude::run(force)
+            }
+        }
     };
 
     if let Err(e) = result {
