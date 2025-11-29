@@ -476,7 +476,10 @@ fn test_new_respects_no_edit_config() {
 
 #[test]
 #[serial]
+#[cfg(unix)]
 fn test_new_with_hooks() {
+    use std::os::unix::fs::PermissionsExt;
+
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
@@ -490,7 +493,6 @@ fn test_new_with_hooks() {
     fs::write(&before_hook_path, "echo 'before hook'").unwrap();
     fs::write(&after_hook_path, "echo 'after hook'").unwrap();
 
-    use std::os::unix::fs::PermissionsExt;
     let perms = fs::Permissions::from_mode(0o755);
     fs::set_permissions(&before_hook_path, perms.clone()).unwrap();
     fs::set_permissions(&after_hook_path, perms).unwrap();

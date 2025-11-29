@@ -1,8 +1,27 @@
 use crate::config::Config;
+
+#[cfg(unix)]
 use std::fs;
+#[cfg(unix)]
 use std::process::Command;
 
+/// Run lifecycle hooks for a command.
+/// Hooks are shell scripts stored in .moth/hooks/{command}/{before|after}/
+/// This only works on Unix systems - on Windows, hooks are silently skipped.
 pub fn run_hooks(command: &str, hook_type: &str) -> Result<(), String> {
+    #[cfg(unix)]
+    {
+        run_hooks_unix(command, hook_type)
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (command, hook_type);
+        Ok(())
+    }
+}
+
+#[cfg(unix)]
+fn run_hooks_unix(command: &str, hook_type: &str) -> Result<(), String> {
     match Config::load() {
         Ok(config) => {
             let hooks_dir = config.moth_dir.join("hooks");
