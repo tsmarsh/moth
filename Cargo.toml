@@ -25,6 +25,9 @@ futures = "0.3"
 name = "cucumber"
 harness = false
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin)'] }
+
 [package.metadata.deb]
 maintainer = "Tom Marsh <tsmarsh@gmail.com>"
 copyright = "2025, Moth Contributors <MIT>"

@@ -477,6 +477,7 @@ fn test_new_respects_no_edit_config() {
 #[test]
 #[serial]
 #[cfg(unix)]
+#[cfg_attr(tarpaulin, ignore)] // Skip under coverage - subprocesses hang in ptrace mode
 fn test_new_with_hooks() {
     use std::os::unix::fs::PermissionsExt;
 
