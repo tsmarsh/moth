@@ -20,7 +20,7 @@ struct Cli {
     list_statuses: bool,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum Commands {
     #[command(about = "Initialize .moth/ directory")]
     Init,
@@ -161,7 +161,7 @@ enum Commands {
     },
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum HookCommands {
     #[command(about = "Install prepare-commit-msg hook")]
     Install {
@@ -194,6 +194,13 @@ fn main() {
         eprintln!("Error: No command specified. Use --help for usage information.");
         process::exit(1);
     };
+
+    let command_name = format!("{:?}", command).to_lowercase();
+
+    if let Err(e) = cmd::lifecycle_hooks::run_hooks(&command_name, "before") {
+        eprintln!("Error running before hook: {}", e);
+        process::exit(1);
+    }
 
     let result = match command {
         Commands::Init => cmd::init::run(),
@@ -269,6 +276,11 @@ fn main() {
 
     if let Err(e) = result {
         eprintln!("Error: {}", e);
+        process::exit(1);
+    }
+
+    if let Err(e) = cmd::lifecycle_hooks::run_hooks(&command_name, "after") {
+        eprintln!("Error running after hook: {}", e);
         process::exit(1);
     }
 }
