@@ -297,6 +297,23 @@ moth report
 
 The report includes: timestamp, story ID, event type (created/moved/edited/deleted), and details.
 
+## Lifecycle hooks
+
+Moth supports execution of a custom script before and after each command.
+Hooks are placed in the `.moth/hooks/` directory and named according to the command they are associated with. E.g. it follows the structure: <command name>/[before|after]/<script name>:
+
+```
+./moth/hooks/
+    new/          
+        before/   
+        after/    
+            setup-git-branch.sh
+    done/         
+        before/   
+        after/
+            commit-final-spec-changes.sh
+```
+
 ## Testing
 
 Run the full test suite:

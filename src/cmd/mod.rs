@@ -3,6 +3,7 @@ pub mod done;
 pub mod edit;
 pub mod hook;
 pub mod init;
+pub mod lifecycle_hooks;
 pub mod list;
 pub mod mv;
 pub mod new;
