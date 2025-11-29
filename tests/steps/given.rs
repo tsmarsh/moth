@@ -28,13 +28,13 @@ fn initialized_workspace(world: &mut MothWorld) {
 
 #[given(expr = "an issue {string} exists")]
 fn issue_exists(world: &mut MothWorld, title: String) {
-    cmd::new::run(&title, None, true, false).expect("Failed to create issue");
+    cmd::new::run(&title, None, true, false, None).expect("Failed to create issue");
     world.last_issue_id = get_last_issue_id();
 }
 
 #[given(expr = "an issue {string} exists with severity {string}")]
 fn issue_exists_with_severity(world: &mut MothWorld, title: String, severity: String) {
-    cmd::new::run(&title, Some(&severity), true, false).expect("Failed to create issue");
+    cmd::new::run(&title, Some(&severity), true, false, None).expect("Failed to create issue");
     world.last_issue_id = get_last_issue_id();
 }
 
@@ -55,7 +55,7 @@ fn config_no_edit_true(_world: &mut MothWorld) {
 #[given(expr = "{int} issues exist")]
 fn multiple_issues_exist(world: &mut MothWorld, count: usize) {
     for i in 0..count {
-        cmd::new::run(&format!("Issue {}", i + 1), None, true, false)
+        cmd::new::run(&format!("Issue {}", i + 1), None, true, false, None)
             .expect("Failed to create issue");
     }
     world.last_issue_id = get_last_issue_id();

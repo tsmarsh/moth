@@ -19,7 +19,7 @@ fn user_runs_init(world: &mut MothWorld) {
 
 #[when(expr = "the user creates issue {string}")]
 fn user_creates_issue(world: &mut MothWorld, title: String) {
-    let result = cmd::new::run(&title, None, true, false);
+    let result = cmd::new::run(&title, None, true, false, None);
     match result {
         Ok(()) => {
             world.last_issue_id = get_last_issue_id();
@@ -33,7 +33,7 @@ fn user_creates_issue(world: &mut MothWorld, title: String) {
 
 #[when(expr = "the user creates issue {string} with severity {string}")]
 fn user_creates_issue_with_severity(world: &mut MothWorld, title: String, severity: String) {
-    let result = cmd::new::run(&title, Some(&severity), true, false);
+    let result = cmd::new::run(&title, Some(&severity), true, false, None);
     match result {
         Ok(()) => {
             world.last_issue_id = get_last_issue_id();
@@ -47,7 +47,7 @@ fn user_creates_issue_with_severity(world: &mut MothWorld, title: String, severi
 
 #[when(expr = "the user creates issue {string} with --start flag")]
 fn user_creates_issue_with_start(world: &mut MothWorld, title: String) {
-    let result = cmd::new::run(&title, None, true, true);
+    let result = cmd::new::run(&title, None, true, true, None);
     match result {
         Ok(()) => {
             world.last_issue_id = get_last_issue_id();
@@ -62,7 +62,7 @@ fn user_creates_issue_with_start(world: &mut MothWorld, title: String) {
 #[when(expr = "the user creates issue {string} without --no-edit")]
 fn user_creates_issue_without_no_edit(world: &mut MothWorld, title: String) {
     // skip_editor = false means editor would open (but config may override)
-    let result = cmd::new::run(&title, None, false, false);
+    let result = cmd::new::run(&title, None, false, false, None);
     match result {
         Ok(()) => {
             world.last_issue_id = get_last_issue_id();

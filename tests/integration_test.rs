@@ -51,7 +51,7 @@ fn test_new_creates_issue() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    let result = cmd::new::run("Fix login bug", Some("high"), true, false);
+    let result = cmd::new::run("Fix login bug", Some("high"), true, false, None);
     assert!(result.is_ok());
 
     let config = Config::load().unwrap();
@@ -70,7 +70,7 @@ fn test_new_with_default_severity() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    let result = cmd::new::run("Add dark mode", None, true, false);
+    let result = cmd::new::run("Add dark mode", None, true, false, None);
     assert!(result.is_ok());
 
     let config = Config::load().unwrap();
@@ -87,7 +87,7 @@ fn test_new_fails_with_empty_title() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    let result = cmd::new::run("", None, true, false);
+    let result = cmd::new::run("", None, true, false, None);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("cannot be empty"));
 }
@@ -98,7 +98,7 @@ fn test_new_fails_with_invalid_severity() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    let result = cmd::new::run("Test issue", Some("invalid"), true, false);
+    let result = cmd::new::run("Test issue", Some("invalid"), true, false, None);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Invalid severity"));
 }
@@ -109,8 +109,8 @@ fn test_list_shows_all_except_done_by_default() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Issue 1", None, true, false).unwrap();
-    cmd::new::run("Issue 2", None, true, false).unwrap();
+    cmd::new::run("Issue 1", None, true, false, None).unwrap();
+    cmd::new::run("Issue 2", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -128,7 +128,7 @@ fn test_show_displays_issue_content() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", Some("high"), true, false).unwrap();
+    cmd::new::run("Test issue", Some("high"), true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -147,7 +147,7 @@ fn test_show_with_partial_id() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -175,7 +175,7 @@ fn test_start_moves_issue_to_doing() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -200,7 +200,7 @@ fn test_done_moves_issue_to_done() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -225,7 +225,7 @@ fn test_mv_moves_issue_to_custom_status() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -250,7 +250,7 @@ fn test_mv_fails_with_invalid_status() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -268,7 +268,7 @@ fn test_rm_deletes_issue() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -303,8 +303,8 @@ fn test_full_workflow() {
 
     cmd::init::run().unwrap();
 
-    cmd::new::run("Fix login bug", Some("high"), true, false).unwrap();
-    cmd::new::run("Add dark mode", None, true, false).unwrap();
+    cmd::new::run("Fix login bug", Some("high"), true, false, None).unwrap();
+    cmd::new::run("Add dark mode", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -344,7 +344,7 @@ fn test_partial_id_ambiguous() {
     cmd::init::run().unwrap();
 
     for i in 0..10 {
-        cmd::new::run(&format!("Issue {}", i), None, true, false).unwrap();
+        cmd::new::run(&format!("Issue {}", i), None, true, false, None).unwrap();
     }
 
     let config = Config::load().unwrap();
@@ -367,10 +367,10 @@ fn test_issue_sorting_by_severity() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Low severity issue", Some("low"), true, false).unwrap();
-    cmd::new::run("High severity issue", Some("high"), true, false).unwrap();
-    cmd::new::run("Critical issue", Some("crit"), true, false).unwrap();
-    cmd::new::run("Medium severity issue", Some("med"), true, false).unwrap();
+    cmd::new::run("Low severity issue", Some("low"), true, false, None).unwrap();
+    cmd::new::run("High severity issue", Some("high"), true, false, None).unwrap();
+    cmd::new::run("Critical issue", Some("crit"), true, false, None).unwrap();
+    cmd::new::run("Medium severity issue", Some("med"), true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -389,7 +389,7 @@ fn test_show_no_args_shows_current() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -419,7 +419,7 @@ fn test_done_no_args_finishes_current() {
     let _temp = setup_test_env();
     cmd::init::run().unwrap();
 
-    cmd::new::run("Test issue", None, true, false).unwrap();
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
 
     let config = Config::load().unwrap();
     let store = Store::new(config).unwrap();
@@ -463,7 +463,7 @@ fn test_new_respects_no_edit_config() {
     fs::write(&config_path, modified_config).unwrap();
 
     // Try to create a new issue without skipping editor
-    let result = cmd::new::run("Test issue with no_edit", None, false, false);
+    let result = cmd::new::run("Test issue with no_edit", None, false, false, None);
     assert!(result.is_ok());
 
     // Verify that the issue was created

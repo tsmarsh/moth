@@ -3,10 +3,17 @@ use crate::config::Config;
 use crate::issue::Severity;
 use crate::store::Store;
 use anyhow::{Context, Result};
+use std::fs;
 use std::process::Command;
 use std::str::FromStr;
 
-pub fn run(title: &str, severity: Option<&str>, skip_editor: bool, start: bool) -> Result<()> {
+pub fn run(
+    title: &str,
+    severity: Option<&str>,
+    skip_editor: bool,
+    start: bool,
+    body: Option<String>,
+) -> Result<()> {
     let config = Config::load()?;
     let store = Store::new(config)?;
 
@@ -14,6 +21,12 @@ pub fn run(title: &str, severity: Option<&str>, skip_editor: bool, start: bool) 
     let severity = Severity::from_str(severity_str)?;
 
     let issue = store.create_issue(title, severity)?;
+
+    // Write body if provided
+    if let Some(content) = body {
+        fs::write(&issue.path, content)
+            .with_context(|| format!("Failed to write issue body: {}", issue.path.display()))?;
+    }
 
     println!(
         "Created {}: {} [{}]",

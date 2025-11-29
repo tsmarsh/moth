@@ -39,6 +39,9 @@ enum Commands {
 
         #[arg(long, help = "Start the issue immediately (move to 'doing' status)")]
         start: bool,
+
+        #[arg(long, help = "Read story body from stdin")]
+        stdin: bool,
     },
 
     #[command(about = "List issues")]
@@ -210,7 +213,20 @@ fn main() {
             severity,
             no_edit,
             start,
-        } => cmd::new::run(&title, severity.as_deref(), no_edit, start),
+            stdin,
+        } => {
+            let body = if stdin {
+                use std::io::Read;
+                let mut content = String::new();
+                io::stdin()
+                    .read_to_string(&mut content)
+                    .expect("Failed to read from stdin");
+                Some(content)
+            } else {
+                None
+            };
+            cmd::new::run(&title, severity.as_deref(), no_edit, start, body)
+        }
         Commands::Ls {
             status,
             all,
