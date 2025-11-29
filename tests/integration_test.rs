@@ -473,3 +473,35 @@ fn test_new_respects_no_edit_config() {
     assert_eq!(issues.len(), 1);
     assert_eq!(issues[0].slug, "test_issue_with_no_edit");
 }
+
+#[test]
+#[serial]
+fn test_new_with_hooks() {
+    let _temp = setup_test_env();
+    cmd::init::run().unwrap();
+
+    let hooks_dir = PathBuf::from(".moth/hooks/new");
+    fs::create_dir_all(hooks_dir.join("before")).unwrap();
+    fs::create_dir_all(hooks_dir.join("after")).unwrap();
+
+    let before_hook_path = hooks_dir.join("before/test.sh");
+    let after_hook_path = hooks_dir.join("after/test.sh");
+
+    fs::write(&before_hook_path, "echo 'before hook'").unwrap();
+    fs::write(&after_hook_path, "echo 'after hook'").unwrap();
+
+    use std::os::unix::fs::PermissionsExt;
+    let perms = fs::Permissions::from_mode(0o755);
+    fs::set_permissions(&before_hook_path, perms.clone()).unwrap();
+    fs::set_permissions(&after_hook_path, perms).unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_moth"))
+        .args(["new", "Test issue"])
+        .output()
+        .unwrap();
+
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    assert!(stdout.contains("before hook"));
+    assert!(stdout.contains("after hook"));
+}

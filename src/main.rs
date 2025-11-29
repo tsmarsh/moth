@@ -1,6 +1,7 @@
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{Shell, generate};
 use moth::cmd;
+use std::env::args;
 use std::io;
 use std::process;
 
@@ -195,7 +196,7 @@ fn main() {
         process::exit(1);
     };
 
-    let command_name = format!("{:?}", command).to_lowercase();
+    let command_name = args().nth(1).unwrap_or_default();
 
     if let Err(e) = cmd::lifecycle_hooks::run_hooks(&command_name, "before") {
         eprintln!("Error running before hook: {}", e);
