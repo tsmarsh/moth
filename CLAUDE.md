@@ -22,6 +22,8 @@ Moth stores issues as markdown files in `.moth/` directories organized by status
 
 Prioritized issues have a numeric prefix: `001-{id}-{severity}-{slug}.md`
 
+**Note**: Moth automatically recreates missing status directories (e.g., if git removes empty directories). As long as `config.yml` exists, moth will recover gracefully.
+
 ## Workflow Commands
 
 ### Viewing Issues
@@ -78,6 +80,9 @@ moth new "Quick fix" --no-edit
 
 # Create and immediately start working
 moth new "Urgent task" --start
+
+# Create with body from stdin (useful for piping content)
+echo "Issue description" | moth new "Issue title" --stdin
 ```
 
 ### Issue Management

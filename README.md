@@ -61,10 +61,10 @@ The binary will be available at `target/release/moth`.
 moth init
 
 # Create a new issue
-moth new "Fix login bug" -p high
+moth new "Fix login bug" -s high
 
 # Create and immediately start working on an issue
-moth new "Urgent fix" -p crit --start
+moth new "Urgent fix" -s crit --start
 
 # List issues
 moth ls
@@ -112,8 +112,8 @@ moth report --since HEAD~10
 | Command | Description |
 |---------|-------------|
 | `moth init` | Create `.moth/` structure with default config |
-| `moth new "<title>" [-p priority] [--start]` | Create issue in first status (optionally start immediately) |
-| `moth ls [-s status] [-a]` | List issues (default: all except last status) |
+| `moth new "<title>" [-s severity] [--start] [--stdin]` | Create issue in first status (optionally start immediately) |
+| `moth ls [-t status] [-s severity] [-a]` | List issues (default: all except last status) |
 | `moth show [id]` | Display issue content (current issue if no ID) |
 | `moth start <id>` | Move issue to `statuses[1]` and set as current |
 | `moth done [id]` | Move issue to `statuses[-1]` (current issue if no ID) |
@@ -155,8 +155,8 @@ statuses:
   - name: done
     dir: done
 
-# Default priority for new issues
-default_priority: med
+# Default severity for new issues
+default_severity: med
 
 # Editor for `moth edit` (falls back to $EDITOR, then vi)
 editor: nvim
@@ -165,7 +165,7 @@ editor: nvim
 id_length: 5
 
 # Skip editor when creating issues (useful for quick issue creation)
-no_edit_on_new: false
+no_edit: false
 
 # Priority ordering settings
 priority:
@@ -178,7 +178,7 @@ priority:
 - `statuses[1]`: Target for `moth start`
 - `statuses[-1]`: Target for `moth done`
 - At least 2 statuses required
-- `default_priority` must be one of: `crit`, `high`, `med`, `low`
+- `default_severity` must be one of: `crit`, `high`, `med`, `low`
 
 ## File Structure
 
@@ -195,6 +195,8 @@ priority:
 └── done/
     └── b2h8l-low-update_docs.md
 ```
+
+**Note**: Moth automatically recreates missing status directories (e.g., if git removes empty directories). As long as `config.yml` exists, moth will recover gracefully.
 
 ## Filename Convention
 
@@ -330,8 +332,9 @@ cargo test --test e2e_shell_test
 ```
 
 The project includes:
-- **24 integration tests**: Direct function testing
+- **27 integration tests**: Direct function testing
 - **19 e2e shell tests**: Full CLI workflow testing via shell commands
+- **43 cucumber scenarios**: BDD feature tests
 
 ## License
 

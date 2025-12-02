@@ -9,13 +9,14 @@ pub struct Store {
 
 impl Store {
     pub fn new(config: Config) -> Result<Self> {
+        // Ensure all status directories exist, creating them if needed.
+        // This handles the case where git removes empty directories.
         for status in &config.statuses {
             let dir = config.status_dir(status);
             if !dir.exists() {
-                return Err(anyhow!(
-                    "Status directory does not exist: {}. Try running 'moth init' first.",
-                    dir.display()
-                ));
+                fs::create_dir_all(&dir).with_context(|| {
+                    format!("Failed to create status directory: {}", dir.display())
+                })?;
             }
         }
 

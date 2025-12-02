@@ -476,6 +476,60 @@ fn test_new_respects_no_edit_config() {
 
 #[test]
 #[serial]
+fn test_store_recreates_missing_directories() {
+    let _temp = setup_test_env();
+    cmd::init::run().unwrap();
+
+    // Remove one of the status directories (simulating git removing empty dirs)
+    let doing_dir = PathBuf::from(".moth/doing");
+    assert!(doing_dir.exists());
+    fs::remove_dir(&doing_dir).unwrap();
+    assert!(!doing_dir.exists());
+
+    // Creating a Store should recreate the missing directory
+    let config = Config::load().unwrap();
+    let store = Store::new(config).unwrap();
+
+    // Directory should be recreated
+    assert!(doing_dir.exists());
+
+    // Operations should work normally
+    let issues = store.issues_by_status("doing").unwrap();
+    assert_eq!(issues.len(), 0);
+}
+
+#[test]
+#[serial]
+fn test_operations_work_after_missing_directories_restored() {
+    let _temp = setup_test_env();
+    cmd::init::run().unwrap();
+
+    // Create an issue
+    cmd::new::run("Test issue", None, true, false, None).unwrap();
+
+    // Remove the doing directory
+    let doing_dir = PathBuf::from(".moth/doing");
+    fs::remove_dir(&doing_dir).unwrap();
+    assert!(!doing_dir.exists());
+
+    // Start should still work (directory will be recreated)
+    let config = Config::load().unwrap();
+    let store = Store::new(config).unwrap();
+    let issues = store.all_issues().unwrap();
+    let id = issues[0].id.clone();
+
+    cmd::start::run(&id).unwrap();
+
+    // Verify the issue was moved to doing
+    let config = Config::load().unwrap();
+    let store = Store::new(config).unwrap();
+    let doing_issues = store.issues_by_status("doing").unwrap();
+    assert_eq!(doing_issues.len(), 1);
+    assert_eq!(doing_issues[0].id, id);
+}
+
+#[test]
+#[serial]
 #[cfg(unix)]
 #[ignore] // Spawns subprocess that hangs in CI - run manually with `cargo test -- --ignored`
 fn test_new_with_hooks() {
